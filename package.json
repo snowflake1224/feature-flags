@@ -1,0 +1,25 @@
+{
+  "name": "flagship",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Flagship — a LaunchDarkly-style feature flag & remote config platform",
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build:sdk": "npm run build --workspace @flagship/sdk",
+    "build:backend": "npm run build --workspace backend",
+    "build:frontend": "npm run build --workspace frontend",
+    "dev:backend": "npm run start:dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "test": "npm run test --workspace @flagship/sdk && npm run test --workspace backend",
+    "infra:up": "docker compose up -d postgres redis",
+    "infra:down": "docker compose down"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

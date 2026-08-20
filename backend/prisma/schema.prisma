@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Control plane: the source of truth teams edit through the dashboard/API.
+// ---------------------------------------------------------------------------
+
+model Project {
+  id           String        @id @default(cuid())
+  key          String        @unique
+  name         String
+  createdAt    DateTime      @default(now())
+  environments Environment[]
+  flags        Flag[]
+  segments     Segment[]
+  experiments  Experiment[]
+  auditLogs    AuditLog[]
+}
+
+model Environment {
+  id         String   @id @default(cuid())
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId  String
+  key        String
+  name       String
+  color      String   @default("#6366f1")
+  // Which environment this is (prod gets guarded UI, etc.)
+  production Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sdkKeys      SdkKey[]
+  flagConfigs  FlagConfig[]
+  segments     Segment[]
+  experiments  Experiment[]
+  events       Event[]
+
+  @@unique([projectId, key])
+}
+
+// A rotating SDK key that clients present to read a single environment's dataset.
+model SdkKey {
+  id            String      @id @default(cuid())
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String
+  key           String      @unique
+  // "client" (mobile/web, read-only dataset) vs "server"
+  kind          String      @default("server")
+  active        Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+}
+
+model Flag {
+  id          String       @id @default(cuid())
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId   String
+  key         String
+  name        String
+  description String       @default("")
+  // "boolean" | "string" | "number" | "json"
+  kind        String       @default("boolean")
+  // ordered list of possible values (JSON array)
+  variations  Json
+  // flag intended to be short-lived (release toggle) vs long-lived (ops/config)
+  temporary   Boolean      @default(true)
+  tags        String[]     @default([])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  configs     FlagConfig[]
+
+  @@unique([projectId, key])
+}
+
+// Per-environment targeting configuration for a flag. This is what the
+// evaluation engine consumes.
+model FlagConfig {
+  id            String      @id @default(cuid())
+  flag          Flag        @relation(fields: [flagId], references: [id], onDelete: Cascade)
+  flagId        String
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String
+
+  // kill switch
+  on            Boolean     @default(false)
+  offVariation  Int         @default(0)
+  // VariationOrRollout
+  fallthrough   Json
+  // Target[]  : individually targeted context keys
+  targets       Json        @default("[]")
+  // TargetingRule[]
+  rules         Json        @default("[]")
+  // Prerequisite[]
+  prerequisites Json        @default("[]")
+  // stable salt so bucketing is deterministic and independent per flag
+  salt          String
+  // bumped on every change; SDKs use it to detect newer datasets
+  version       Int         @default(1)
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([flagId, environmentId])
+}
+
+model Segment {
+  id            String      @id @default(cuid())
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String
+  key           String
+  name          String
+  description   String      @default("")
+  included      String[]    @default([])
+  excluded      String[]    @default([])
+  // SegmentRule[]
+  rules         Json        @default("[]")
+  salt          String
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([environmentId, key])
+}
+
+// ---------------------------------------------------------------------------
+// Audit: append-only record of every control-plane change.
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  environmentId String?
+  actor         String   @default("system")
+  // e.g. "flag.updated", "flag.killswitch", "segment.created"
+  action        String
+  entityType    String
+  entityId      String
+  entityKey     String   @default("")
+  comment       String   @default("")
+  before        Json?
+  after         Json?
+  createdAt     DateTime @default(now())
+
+  @@index([projectId, createdAt])
+  @@index([entityType, entityId])
+}
+
+// ---------------------------------------------------------------------------
+// Experiments: metrics events + experiment definitions.
+// ---------------------------------------------------------------------------
+
+model Experiment {
+  id            String      @id @default(cuid())
+  project       Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId     String
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String
+  key           String
+  name          String
+  // flag whose rollout defines the variation split under test
+  flagKey       String
+  // event fired when a context is exposed to the experiment
+  exposureEvent String
+  // event fired when a context converts (the goal metric)
+  goalEvent     String
+  // "binary" (conversion rate) | "numeric" (avg value, e.g. revenue)
+  metricKind    String      @default("binary")
+  status        String      @default("running")
+  createdAt     DateTime    @default(now())
+
+  @@unique([environmentId, key])
+}
+
+model Event {
+  id            String      @id @default(cuid())
+  environment   Environment @relation(fields: [environmentId], references: [id], onDelete: Cascade)
+  environmentId String
+  eventKey      String
+  contextKey    String
+  flagKey       String?
+  // variation the context resolved to, computed at ingest for pure rollouts
+  variationIndex Int?
+  value         Float?
+  metadata      Json?
+  ts            DateTime    @default(now())
+
+  @@index([environmentId, eventKey, ts])
+  @@index([environmentId, flagKey])
+}
