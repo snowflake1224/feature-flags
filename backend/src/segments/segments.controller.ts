@@ -9,8 +9,8 @@ export class SegmentsController {
   constructor(private segments: SegmentsService) {}
 
   @Get()
-  list(@Param("environmentId") environmentId: string) {
-    return this.segments.list(environmentId);
+  list(@Param("projectId") projectId: string, @Param("environmentId") environmentId: string) {
+    return this.segments.list(projectId, environmentId);
   }
 
   @Post()

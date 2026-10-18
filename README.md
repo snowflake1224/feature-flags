@@ -29,6 +29,9 @@ releases in near-real-time.
 
 See **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** for the HLD (control vs data
 plane), LLD (evaluation engine, rule parser, rollout algorithm), and scaling.
+The code-backed dossier (patterns, API, failure modes, interview notes) is
+**[project-description/README.md](project-description/README.md)**. A click-by-click
+script is **[project-description/22-demo-guide.md](project-description/22-demo-guide.md)**.
 
 ## Repository layout
 
@@ -42,6 +45,7 @@ feature-flags/
 ├── infra/terraform/    Cloud Run + Cloud SQL + Memorystore + Secret Manager
 ├── infra/k6/           evaluation-latency load test
 ├── docs/               architecture
+├── project-description/ technical dossier and demo guide
 └── docker-compose.yml  Postgres + Redis (+ full-stack profile)
 ```
 
@@ -83,6 +87,38 @@ The seed prints ready-to-use SDK keys:
 Production SDK key:  sdk-production-demo00000000
 Development SDK key: sdk-development-demo0000000
 ```
+
+## 5-minute browser demo
+
+Do this after the quickstart, on **production**. Full script, persona table, and
+troubleshooting: **[project-description/22-demo-guide.md](project-description/22-demo-guide.md)**.
+
+1. Open **http://localhost:3000** and open **Demo Project**. The UI selects production.
+2. On **Flags**, `new-checkout` is on: included beta keys and `@flagship.dev` emails get the new flow; everyone else is a 20% rollout. `pricing-experiment` is a 50/50 string flag.
+3. Open **Live demo** and wait for the authenticated stream’s initial `put`. Compare a browser-local evaluation with the server, then turn `new-checkout` off.
+4. Watch the tab receive a `patch`, refetch the dataset, and show the off variation plus refresh latency. That path is Postgres write → Redis cache + pub/sub → SSE `patch` → authenticated dataset fetch. Optionally run `node examples/node-demo/index.mjs` to demonstrate the same path through the Node SDK.
+5. Open **Experiments** → **Pricing Layout A/B**. Seeded production traffic (`user-0` … `user-3999`) aims at roughly 10% conversion on control and 14% on the variant. Exact counts change every seed.
+6. Open **Audit log** and confirm the toggle was recorded (actor defaults to `demo@flagship.dev`).
+
+The **Live demo** tab also sends exposure/conversion events and refreshes experiment results. Python polls and will not show the kill switch until the next interval (`python examples/python-demo/main.py`).
+
+> **TODO (screenshot):** Projects list with Demo Project. Placeholder only — do not add an image tag until the file exists.
+>
+> **TODO (screenshot):** Production flags with `new-checkout` on.
+>
+> **TODO (GIF):** Kill switch, then the Node log flipping `new-checkout` to false.
+
+## Secure demo configuration
+
+The quickstart leaves the control plane open so the dashboard works on localhost. Use that only on a machine you trust.
+
+Before anyone else can reach the API:
+
+- Set `ADMIN_API_KEY` to a long random value. `/projects` routes then require header `x-api-key`; save the same value in dashboard **Settings** so later control-plane requests include it.
+- Set `CORS_ORIGIN` to the dashboard origin only.
+- Do not publish Postgres or Redis to the network. The seeded SDK keys above are **sample keys committed in the seed script**. Rotate them if the API is reachable, and do not reuse them as production secrets.
+- Data-plane routes always require `Authorization: Bearer <sdk key>` (or `x-sdk-key`). Rotation marks old keys inactive in Postgres immediately and the new key works on first use. A process that already resolved the old key can still accept it for up to 30 seconds (in-memory cache, per instance, successful lookups only).
+- `JWT_SECRET` is in `.env.example` and Terraform and is **not read by application code**. It does not authenticate requests.
 
 ### Try the SDKs
 

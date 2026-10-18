@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { customAlphabet } from "nanoid";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
+import { OwnershipService } from "../common/ownership.service";
 
 const keyId = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 12);
 
@@ -14,6 +15,7 @@ export class ProjectsService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private ownership: OwnershipService,
   ) {}
 
   async create(input: { key: string; name: string }, actor: string) {
@@ -67,8 +69,11 @@ export class ProjectsService {
     return project;
   }
 
-  async rotateSdkKey(environmentId: string, actor: string) {
-    const env = await this.prisma.environment.findUniqueOrThrow({ where: { id: environmentId } });
+  async rotateSdkKey(environmentId: string, actor: string, projectId?: string) {
+    const env = projectId
+      ? await this.ownership.assertEnvironmentInProject(projectId, environmentId)
+      : await this.prisma.environment.findUnique({ where: { id: environmentId } });
+    if (!env) throw new NotFoundException("environment not found");
     await this.prisma.sdkKey.updateMany({
       where: { environmentId, active: true },
       data: { active: false },

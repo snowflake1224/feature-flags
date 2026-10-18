@@ -185,7 +185,9 @@ export class FlagshipClient {
         headers: this.headers(),
         body: JSON.stringify({
           eventKey,
+          // contextKey stays for servers and stores that only know the id.
           contextKey: context.key,
+          context,
           flagKey: opts.flagKey,
           value: opts.value,
           metadata: opts.metadata,

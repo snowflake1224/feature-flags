@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
+import { OwnershipService } from "../common/ownership.service";
 import { twoProportionTest } from "./stats";
 
 export interface CreateExperimentInput {
@@ -17,13 +18,19 @@ export class ExperimentsService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    private ownership: OwnershipService,
   ) {}
 
-  async list(environmentId: string) {
-    return this.prisma.experiment.findMany({ where: { environmentId }, orderBy: { createdAt: "desc" } });
+  async list(projectId: string, environmentId: string) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
+    return this.prisma.experiment.findMany({
+      where: { environmentId, projectId },
+      orderBy: { createdAt: "desc" },
+    });
   }
 
   async create(projectId: string, environmentId: string, input: CreateExperimentInput, actor: string) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
     const exp = await this.prisma.experiment.create({
       data: {
         projectId,
@@ -56,11 +63,12 @@ export class ExperimentsService {
    * ingest time. We then run a two-proportion z-test of each variation against
    * the control (variation 0) to surface statistical significance.
    */
-  async results(environmentId: string, key: string) {
+  async results(projectId: string, environmentId: string, key: string) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
     const exp = await this.prisma.experiment.findUnique({
       where: { environmentId_key: { environmentId, key } },
     });
-    if (!exp) throw new NotFoundException("experiment not found");
+    if (!exp || exp.projectId !== projectId) throw new NotFoundException("experiment not found");
 
     const flag = await this.prisma.flag.findFirst({
       where: { projectId: exp.projectId, key: exp.flagKey },

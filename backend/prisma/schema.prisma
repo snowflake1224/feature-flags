@@ -119,6 +119,8 @@ model Segment {
   // SegmentRule[]
   rules         Json        @default("[]")
   salt          String
+  // bumped on every update and folded into the environment dataset version
+  version       Int         @default(1)
   updatedAt     DateTime    @updatedAt
 
   @@unique([environmentId, key])

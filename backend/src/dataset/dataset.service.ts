@@ -36,9 +36,9 @@ export class DatasetService {
         variations: cfg.flag.variations as Flag["variations"],
         offVariation: cfg.offVariation,
         fallthrough: cfg.fallthrough as Flag["fallthrough"],
-        targets: cfg.targets as Flag["targets"],
-        rules: cfg.rules as Flag["rules"],
-        prerequisites: cfg.prerequisites as Flag["prerequisites"],
+        targets: cfg.targets as unknown as Flag["targets"],
+        rules: cfg.rules as unknown as Flag["rules"],
+        prerequisites: cfg.prerequisites as unknown as Flag["prerequisites"],
         salt: cfg.salt,
         version: cfg.version,
       };
@@ -50,15 +50,17 @@ export class DatasetService {
         key: seg.key,
         included: seg.included,
         excluded: seg.excluded,
-        rules: seg.rules as Segment["rules"],
+        rules: seg.rules as unknown as Segment["rules"],
         salt: seg.salt,
       };
     }
 
-    // Environment-level version = sum of flag config versions + segment count.
-    // Any change bumps at least one config version, so this monotonically grows.
-    const version =
-      configs.reduce((acc, c) => acc + c.version, 0) + segments.length * 1_000_000;
+    // Flag config versions plus a coarse segment-count term (create/delete).
+    // Segment.version is summed too, so editing rules without changing the
+    // segment count still produces a new dataset version.
+    const flagVersion = configs.reduce((acc, c) => acc + c.version, 0);
+    const segmentVersion = segments.reduce((acc, seg) => acc + seg.version, 0);
+    const version = flagVersion + segments.length * 1_000_000 + segmentVersion;
 
     return {
       environmentKey: environment.key,

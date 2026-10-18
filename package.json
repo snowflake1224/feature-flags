@@ -14,12 +14,18 @@
     "build:frontend": "npm run build --workspace frontend",
     "dev:backend": "npm run start:dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
-    "test": "npm run test --workspace @flagship/sdk && npm run test --workspace backend",
+    "test": "npm run test --workspace @flagship/sdk && npm run test --workspace backend && npm run test --workspace frontend",
+    "test:parity": "npm run test:parity --workspace @flagship/sdk && npm run test:parity:python",
+    "test:parity:python": "python -m pytest sdks/python/tests/test_golden_vectors.py",
+    "test:e2e": "playwright test",
     "infra:up": "docker compose up -d postgres redis",
     "infra:down": "docker compose down"
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1"
   },
   "license": "MIT"
 }

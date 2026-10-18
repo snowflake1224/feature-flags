@@ -9,8 +9,8 @@ export class ExperimentsController {
   constructor(private experiments: ExperimentsService) {}
 
   @Get()
-  list(@Param("environmentId") environmentId: string) {
-    return this.experiments.list(environmentId);
+  list(@Param("projectId") projectId: string, @Param("environmentId") environmentId: string) {
+    return this.experiments.list(projectId, environmentId);
   }
 
   @Post()
@@ -24,7 +24,11 @@ export class ExperimentsController {
   }
 
   @Get(":key/results")
-  results(@Param("environmentId") environmentId: string, @Param("key") key: string) {
-    return this.experiments.results(environmentId, key);
+  results(
+    @Param("projectId") projectId: string,
+    @Param("environmentId") environmentId: string,
+    @Param("key") key: string,
+  ) {
+    return this.experiments.results(projectId, environmentId, key);
   }
 }

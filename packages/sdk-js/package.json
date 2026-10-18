@@ -23,6 +23,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
+    "test:parity": "vitest run test/golden-vectors.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },

@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { DatasetService } from "../dataset/dataset.service";
+import { OwnershipService } from "../common/ownership.service";
 
 export interface CreateFlagInput {
   key: string;
@@ -31,6 +32,7 @@ export class FlagsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private dataset: DatasetService,
+    private ownership: OwnershipService,
   ) {}
 
   async create(projectId: string, input: CreateFlagInput, actor: string) {
@@ -109,6 +111,7 @@ export class FlagsService {
     input: UpdateConfigInput,
     actor: string,
   ) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
     const flag = await this.get(projectId, key);
     const existing = flag.configs.find((c) => c.environmentId === environmentId);
     if (!existing) throw new NotFoundException("flag config not found for environment");
@@ -169,6 +172,7 @@ export class FlagsService {
     actor: string,
     comment?: string,
   ) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
     const flag = await this.get(projectId, key);
     const existing = flag.configs.find((c) => c.environmentId === environmentId);
     if (!existing) throw new NotFoundException("flag config not found for environment");

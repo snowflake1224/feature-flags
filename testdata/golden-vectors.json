@@ -1,0 +1,6271 @@
+{
+  "buckets": [
+    {
+      "name": "checkout user-42 no seed",
+      "key": "new-checkout",
+      "salt": "checkoutsalt00000",
+      "bucketBy": "user-42",
+      "expected": 0.5588033430205928
+    },
+    {
+      "name": "checkout user-0 no seed",
+      "key": "new-checkout",
+      "salt": "checkoutsalt00000",
+      "bucketBy": "user-0",
+      "expected": 0.10941795744755932
+    },
+    {
+      "name": "checkout user-1 no seed",
+      "key": "new-checkout",
+      "salt": "checkoutsalt00000",
+      "bucketBy": "user-1",
+      "expected": 0.5746968229672297
+    },
+    {
+      "name": "pricing user-42 no seed",
+      "key": "pricing-experiment",
+      "salt": "pricingsalt000000",
+      "bucketBy": "user-42",
+      "expected": 0.9301706840566101
+    },
+    {
+      "name": "pricing user-beta-1 no seed",
+      "key": "pricing-experiment",
+      "salt": "pricingsalt000000",
+      "bucketBy": "user-beta-1",
+      "expected": 0.9567750821355068
+    },
+    {
+      "name": "pricing user-beta-2 no seed",
+      "key": "pricing-experiment",
+      "salt": "pricingsalt000000",
+      "bucketBy": "user-beta-2",
+      "expected": 0.4172870805831137
+    },
+    {
+      "name": "rollout user-7 no seed",
+      "key": "rollout-flag",
+      "salt": "salt",
+      "bucketBy": "user-7",
+      "expected": 0.794602609166027
+    },
+    {
+      "name": "rollout user-7 seed 0",
+      "key": "rollout-flag",
+      "salt": "salt",
+      "bucketBy": "user-7",
+      "seed": 0,
+      "expected": 0.7172957242675918
+    },
+    {
+      "name": "rollout user-7 seed 3",
+      "key": "rollout-flag",
+      "salt": "salt",
+      "bucketBy": "user-7",
+      "seed": 3,
+      "expected": 0.8047601235500931
+    },
+    {
+      "name": "rollout user-7 seed 4",
+      "key": "rollout-flag",
+      "salt": "salt",
+      "bucketBy": "user-7",
+      "seed": 4,
+      "expected": 0.37410299521025087
+    },
+    {
+      "name": "segment weight inside",
+      "key": "beta-users",
+      "salt": "betasalt000000000",
+      "bucketBy": "seg-0",
+      "expected": 0.05228209491693671
+    },
+    {
+      "name": "segment weight outside",
+      "key": "beta-users",
+      "salt": "betasalt000000000",
+      "bucketBy": "seg-1",
+      "expected": 0.4010951650454627
+    }
+  ],
+  "evaluations": [
+    {
+      "name": "missing flag",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "nope",
+      "context": {
+        "key": "user-1"
+      },
+      "defaultValue": "fallback",
+      "expected": {
+        "value": "fallback",
+        "variationIndex": null,
+        "reason": {
+          "kind": "ERROR",
+          "errorKind": "FLAG_NOT_FOUND"
+        }
+      }
+    },
+    {
+      "name": "kill switch ignores target",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "maintenance",
+      "context": {
+        "key": "vip-user"
+      },
+      "defaultValue": true,
+      "expected": {
+        "value": false,
+        "variationIndex": 1,
+        "reason": {
+          "kind": "OFF"
+        },
+        "flagVersion": 3
+      }
+    },
+    {
+      "name": "individual target",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "vip-user",
+        "country": "FR"
+      },
+      "defaultValue": false,
+      "expected": {
+        "value": true,
+        "variationIndex": 0,
+        "reason": {
+          "kind": "TARGET_MATCH"
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "segment included",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "user-beta-1",
+        "email": "beta1@example.com"
+      },
+      "defaultValue": false,
+      "expected": {
+        "value": true,
+        "variationIndex": 0,
+        "reason": {
+          "kind": "RULE_MATCH",
+          "ruleId": "beta-rule",
+          "ruleIndex": 0
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "segment email rule",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "staff-1",
+        "email": "grace@flagship.dev"
+      },
+      "defaultValue": false,
+      "expected": {
+        "value": true,
+        "variationIndex": 0,
+        "reason": {
+          "kind": "RULE_MATCH",
+          "ruleId": "beta-rule",
+          "ruleIndex": 0
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "segment excluded",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "user-excluded",
+        "email": "grace@flagship.dev"
+      },
+      "defaultValue": true,
+      "expected": {
+        "value": false,
+        "variationIndex": 1,
+        "reason": {
+          "kind": "FALLTHROUGH"
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "segment weight inside",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "seg-0",
+        "country": "DE",
+        "email": "a@example.com"
+      },
+      "defaultValue": false,
+      "expected": {
+        "value": true,
+        "variationIndex": 0,
+        "reason": {
+          "kind": "RULE_MATCH",
+          "ruleId": "beta-rule",
+          "ruleIndex": 0
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "segment weight outside",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "seg-1",
+        "country": "DE",
+        "email": "a@example.com"
+      },
+      "defaultValue": true,
+      "expected": {
+        "value": false,
+        "variationIndex": 1,
+        "reason": {
+          "kind": "FALLTHROUGH"
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "country rule",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "user-99",
+        "country": "US",
+        "plan": "free"
+      },
+      "defaultValue": false,
+      "expected": {
+        "value": true,
+        "variationIndex": 0,
+        "reason": {
+          "kind": "RULE_MATCH",
+          "ruleId": "country-rule",
+          "ruleIndex": 1
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "negated clause blocks country rule",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "user-1",
+        "country": "US",
+        "plan": "pro",
+        "email": "a@example.com"
+      },
+      "defaultValue": true,
+      "expected": {
+        "value": false,
+        "variationIndex": 1,
+        "reason": {
+          "kind": "FALLTHROUGH"
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "checkout fallthrough in 20 percent",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "user-0",
+        "email": "a@example.com"
+      },
+      "defaultValue": false,
+      "expected": {
+        "value": true,
+        "variationIndex": 0,
+        "reason": {
+          "kind": "FALLTHROUGH"
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "checkout fallthrough outside 20 percent",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "new-checkout",
+      "context": {
+        "key": "user-1",
+        "email": "a@example.com"
+      },
+      "defaultValue": true,
+      "expected": {
+        "value": false,
+        "variationIndex": 1,
+        "reason": {
+          "kind": "FALLTHROUGH"
+        },
+        "flagVersion": 4
+      }
+    },
+    {
+      "name": "pricing rollout",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "pricing-experiment",
+      "context": {
+        "key": "user-beta-2"
+      },
+      "defaultValue": "unset",
+      "expected": {
+        "value": "control",
+        "variationIndex": 0,
+        "reason": {
+          "kind": "FALLTHROUGH"
+        },
+        "flagVersion": 2
+      }
+    },
+    {
+      "name": "prerequisite satisfied",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "child-open",
+      "context": {
+        "key": "user-1"
+      },
+      "defaultValue": "fallback",
+      "expected": {
+        "value": "allowed",
+        "variationIndex": 0,
+        "reason": {
+          "kind": "FALLTHROUGH"
+        },
+        "flagVersion": 5
+      }
+    },
+    {
+      "name": "prerequisite failed",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "child-blocked",
+      "context": {
+        "key": "user-1"
+      },
+      "defaultValue": "fallback",
+      "expected": {
+        "value": "blocked",
+        "variationIndex": 1,
+        "reason": {
+          "kind": "PREREQUISITE_FAILED",
+          "prerequisiteKey": "parent-off"
+        },
+        "flagVersion": 5
+      }
+    },
+    {
+      "name": "prerequisite cycle fails closed",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "cycle-a",
+      "context": {
+        "key": "user-1"
+      },
+      "defaultValue": false,
+      "expected": {
+        "value": false,
+        "variationIndex": 1,
+        "reason": {
+          "kind": "PREREQUISITE_FAILED",
+          "prerequisiteKey": "cycle-b"
+        },
+        "flagVersion": 1
+      }
+    },
+    {
+      "name": "rule rollout seed 0",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "new-checkout": {
+            "key": "new-checkout",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "checkoutsalt00000",
+            "version": 4,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "prerequisites": [],
+            "rules": [
+              {
+                "id": "beta-rule",
+                "clauses": [
+                  {
+                    "attribute": "key",
+                    "op": "segmentMatch",
+                    "values": [
+                      "beta-users"
+                    ]
+                  }
+                ],
+                "variation": 0
+              },
+              {
+                "id": "country-rule",
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "US",
+                      "CA"
+                    ]
+                  },
+                  {
+                    "attribute": "plan",
+                    "op": "in",
+                    "values": [
+                      "pro"
+                    ],
+                    "negate": true
+                  }
+                ],
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 20
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 80
+                  }
+                ]
+              }
+            }
+          },
+          "pricing-experiment": {
+            "key": "pricing-experiment",
+            "on": true,
+            "variations": [
+              "control",
+              "variant"
+            ],
+            "offVariation": 0,
+            "salt": "pricingsalt000000",
+            "version": 2,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          },
+          "maintenance": {
+            "key": "maintenance",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "maint",
+            "version": 3,
+            "targets": [
+              {
+                "variation": 0,
+                "values": [
+                  "vip-user"
+                ]
+              }
+            ],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-open": {
+            "key": "parent-open",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parent",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "parent-off": {
+            "key": "parent-off",
+            "on": false,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "parentoff",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-open": {
+            "key": "child-open",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-open",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "child-blocked": {
+            "key": "child-blocked",
+            "on": true,
+            "variations": [
+              "allowed",
+              "blocked"
+            ],
+            "offVariation": 1,
+            "salt": "child",
+            "version": 5,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "parent-off",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "age-gate": {
+            "key": "age-gate",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "age",
+            "version": 1,
+            "targets": [],
+            "rules": [
+              {
+                "id": "adults",
+                "clauses": [
+                  {
+                    "attribute": "company.plan",
+                    "op": "in",
+                    "values": [
+                      "enterprise"
+                    ]
+                  }
+                ],
+                "rollout": {
+                  "seed": 0,
+                  "bucketBy": "key",
+                  "variations": [
+                    {
+                      "variation": 0,
+                      "weight": 50
+                    },
+                    {
+                      "variation": 1,
+                      "weight": 50
+                    }
+                  ]
+                }
+              }
+            ],
+            "prerequisites": [],
+            "fallthrough": {
+              "variation": 1
+            }
+          },
+          "cycle-a": {
+            "key": "cycle-a",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-b",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          },
+          "cycle-b": {
+            "key": "cycle-b",
+            "on": true,
+            "variations": [
+              true,
+              false
+            ],
+            "offVariation": 1,
+            "salt": "cycle",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [
+              {
+                "flagKey": "cycle-a",
+                "variation": 0
+              }
+            ],
+            "fallthrough": {
+              "variation": 0
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "age-gate",
+      "context": {
+        "key": "user-7",
+        "company": {
+          "plan": "enterprise"
+        }
+      },
+      "defaultValue": false,
+      "expected": {
+        "value": false,
+        "variationIndex": 1,
+        "reason": {
+          "kind": "RULE_MATCH",
+          "ruleId": "adults",
+          "ruleIndex": 0
+        },
+        "flagVersion": 1
+      }
+    },
+    {
+      "name": "rollout no seed",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "rollout-flag": {
+            "key": "rollout-flag",
+            "on": true,
+            "variations": [
+              "a",
+              "b"
+            ],
+            "offVariation": 0,
+            "salt": "salt",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "rollout-flag",
+      "context": {
+        "key": "user-7"
+      },
+      "defaultValue": "unset",
+      "expected": {
+        "value": "b",
+        "variationIndex": 1,
+        "reason": {
+          "kind": "FALLTHROUGH"
+        },
+        "flagVersion": 1
+      }
+    },
+    {
+      "name": "rollout seed 4",
+      "dataset": {
+        "environmentKey": "production",
+        "version": 7,
+        "flags": {
+          "rollout-flag": {
+            "key": "rollout-flag",
+            "on": true,
+            "variations": [
+              "a",
+              "b"
+            ],
+            "offVariation": 0,
+            "salt": "salt",
+            "version": 1,
+            "targets": [],
+            "rules": [],
+            "prerequisites": [],
+            "fallthrough": {
+              "rollout": {
+                "variations": [
+                  {
+                    "variation": 0,
+                    "weight": 50
+                  },
+                  {
+                    "variation": 1,
+                    "weight": 50
+                  }
+                ],
+                "seed": 4
+              }
+            }
+          }
+        },
+        "segments": {
+          "beta-users": {
+            "key": "beta-users",
+            "included": [
+              "user-beta-1",
+              "user-beta-2",
+              "user-beta-3"
+            ],
+            "excluded": [
+              "user-excluded"
+            ],
+            "salt": "betasalt000000000",
+            "rules": [
+              {
+                "clauses": [
+                  {
+                    "attribute": "email",
+                    "op": "endsWith",
+                    "values": [
+                      "@flagship.dev"
+                    ]
+                  }
+                ]
+              },
+              {
+                "clauses": [
+                  {
+                    "attribute": "country",
+                    "op": "in",
+                    "values": [
+                      "DE"
+                    ]
+                  }
+                ],
+                "weight": 10,
+                "bucketBy": "key"
+              }
+            ]
+          }
+        }
+      },
+      "flagKey": "rollout-flag",
+      "context": {
+        "key": "user-7"
+      },
+      "defaultValue": "unset",
+      "expected": {
+        "value": "a",
+        "variationIndex": 0,
+        "reason": {
+          "kind": "FALLTHROUGH"
+        },
+        "flagVersion": 1
+      }
+    }
+  ]
+}

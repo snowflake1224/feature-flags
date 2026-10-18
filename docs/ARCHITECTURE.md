@@ -29,9 +29,14 @@ rules. PostgreSQL is the source of truth. Every write is audited and triggers a
 recompile of the affected environment's dataset.
 
 **Data plane** (`DatasetService`, `SdkController`): serves a single compiled,
-immutable ruleset per environment. Reads never touch PostgreSQL — they read the
-Redis cache. This isolation means a slow admin query can never degrade flag
-reads, and the data plane can be scaled independently.
+immutable ruleset per environment. The cache-hit path is a Redis read and does
+not query PostgreSQL. A cache miss recompiles from PostgreSQL. A slow admin
+query does not itself read the dataset key, but both planes run in **one**
+NestJS process (one Cloud Run service). They are not independently deployed or
+scaled: a blocked event loop, a crash, or a deploy affects admin writes and SDK
+streams together. See
+[scalability](../project-description/14-scalability-and-performance.md) and
+[design patterns](../project-description/21-design-patterns.md).
 
 ### Request paths
 
@@ -85,8 +90,11 @@ variation = first weighted bucket whose cumulative weight exceeds `point`
 - SHA-1 gives good uniformity; the unit tests assert a 10% bucket lands within
   8–12% over 20k keys and that ramping 10%→20% never evicts anyone.
 
-The Python and TypeScript implementations use the identical formula, verified
-by mirrored unit tests.
+The Python and TypeScript implementations use the same formula. Their separate
+test runners both consume `testdata/golden-vectors.json`, covering exact bucket
+points and representative evaluations. This proves parity for those cases,
+while behavior outside the fixture can still drift between ports. See
+[algorithms](../project-description/18-algorithms-and-data-structures.md).
 
 ---
 

@@ -32,8 +32,19 @@ export class ProjectsController {
     return this.projects.get(projectId);
   }
 
+  // Static first segment, registered before ":projectId/environments/...", so the
+  // legacy URL is not parsed with projectId === "environments".
   @Post("environments/:environmentId/rotate-key")
   rotate(@Param("environmentId") environmentId: string, @Actor() actor: string) {
     return this.projects.rotateSdkKey(environmentId, actor);
+  }
+
+  @Post(":projectId/environments/:environmentId/rotate-key")
+  rotateForProject(
+    @Param("projectId") projectId: string,
+    @Param("environmentId") environmentId: string,
+    @Actor() actor: string,
+  ) {
+    return this.projects.rotateSdkKey(environmentId, actor, projectId);
   }
 }

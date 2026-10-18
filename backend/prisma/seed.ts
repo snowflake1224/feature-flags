@@ -47,13 +47,14 @@ async function main() {
         environmentId: env.id,
         key: "beta-users",
         name: "Beta Users",
-        description: "Internal + opted-in beta testers",
-        included: ["user-beta-1", "user-beta-2", "user-beta-3"],
+        description: "Internal and opted-in testers. Named members: ada-lovelace, grace-hopper, user-beta-1.",
+        included: ["user-beta-1", "user-beta-2", "user-beta-3", "ada-lovelace", "grace-hopper"],
         excluded: [],
         rules: [
           { clauses: [{ attribute: "email", op: "endsWith", values: ["@flagship.dev"] }] },
         ] as Prisma.InputJsonValue,
         salt: betaSalt,
+        version: 1,
       },
     });
   }
@@ -190,6 +191,65 @@ async function main() {
       });
     }
   }
+  // Named personas sit outside the synthetic user-N sample. Variation indexes
+  // come from the same bucket function the engine uses, so they stay consistent
+  // with evaluation and do not reshape the experiment's uplift.
+  const publicCandidates = [
+    "sam-public",
+    "nina-public",
+    "omar-public",
+    "priya-public",
+    "chen-public",
+    "noah-public",
+    "maya-public",
+    "leo-public",
+    "iris-public",
+    "owen-public",
+  ];
+  let rolloutIn: string | undefined;
+  let rolloutOut: string | undefined;
+  for (const key of publicCandidates) {
+    const inside = bucket("new-checkout", checkoutSalt, key) < 0.2;
+    if (inside && !rolloutIn) rolloutIn = key;
+    if (!inside && !rolloutOut) rolloutOut = key;
+  }
+
+  const personas: Array<{ key: string; email: string; convert: boolean }> = [
+    { key: "ada-lovelace", email: "ada@flagship.dev", convert: true },
+    { key: "grace-hopper", email: "grace@flagship.dev", convert: false },
+    { key: "user-beta-1", email: "beta1@example.com", convert: false },
+  ];
+  if (rolloutIn) personas.push({ key: rolloutIn, email: `${rolloutIn}@example.com`, convert: false });
+  if (rolloutOut) personas.push({ key: rolloutOut, email: `${rolloutOut}@example.com`, convert: false });
+
+  for (let i = 0; i < personas.length; i++) {
+    const persona = personas[i]!;
+    const point = bucket("pricing-experiment", pricingSalt, persona.key);
+    const variationIndex = point < 0.5 ? 0 : 1;
+    const ts = new Date(now - (i + 1) * 3_600_000);
+    events.push({
+      environmentId: prod.id,
+      eventKey: "pricing_viewed",
+      contextKey: persona.key,
+      flagKey: "pricing-experiment",
+      variationIndex,
+      metadata: { persona: true, email: persona.email },
+      ts,
+    });
+    if (persona.convert) {
+      events.push({
+        environmentId: prod.id,
+        eventKey: "subscribed",
+        contextKey: persona.key,
+        flagKey: "pricing-experiment",
+        variationIndex,
+        value: 19,
+        metadata: { persona: true, email: persona.email },
+        ts,
+      });
+    }
+  }
+
   // Insert in chunks to stay under parameter limits.
   for (let i = 0; i < events.length; i += 1000) {
     await prisma.event.createMany({ data: events.slice(i, i + 1000) });
@@ -198,6 +258,9 @@ async function main() {
   console.log(`Seeded project "demo" with 2 flags, 1 segment, 1 experiment, ${events.length} events.`);
   console.log(`  Production SDK key:  ${PROD_SDK_KEY}`);
   console.log(`  Development SDK key: ${DEV_SDK_KEY}`);
+  console.log("  Beta personas:       ada-lovelace, grace-hopper, user-beta-1");
+  if (rolloutIn) console.log(`  Checkout rollout in: ${rolloutIn}`);
+  if (rolloutOut) console.log(`  Checkout rollout out: ${rolloutOut}`);
 }
 
 main()

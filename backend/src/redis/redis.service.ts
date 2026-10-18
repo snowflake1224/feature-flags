@@ -1,6 +1,13 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import Redis from "ioredis";
 
+type ChangeHandler = (payload: { version: number }) => void;
+
+/** One SSE subscription. Identity, not the handler function, is the reference. */
+interface ChannelRegistration {
+  handler: ChangeHandler;
+}
+
 /**
  * Thin Redis wrapper providing:
  *  - a shared command connection (cache reads/writes)
@@ -11,12 +18,20 @@ import Redis from "ioredis";
  *     endpoints never touch Postgres on the hot path.
  *  2. Change stream (control -> data plane): every publish notifies connected
  *     SDK streams so kill switches propagate in ~milliseconds.
+ *
+ * The subscriber connection is process-wide. Listeners are tracked per channel
+ * so one stream disconnect removes only that registration; Redis UNSUBSCRIBE
+ * runs when the last registration for the channel is gone.
  */
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   readonly client: Redis;
   readonly subscriber: Redis;
   private readonly url = process.env.REDIS_URL ?? "redis://localhost:6379";
+  private readonly channelListeners = new Map<string, Set<ChannelRegistration>>();
+  /** Serializes SUBSCRIBE/UNSUBSCRIBE so an in-flight subscribe cannot drop a newer listener. */
+  private readonly channelQueue = new Map<string, Promise<void>>();
+  private routerAttached = false;
 
   constructor() {
     this.client = new Redis(this.url, { maxRetriesPerRequest: null, lazyConnect: true });
@@ -64,22 +79,69 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.publish(this.channel(environmentId), JSON.stringify(payload));
   }
 
-  subscribeToChanges(environmentId: string, handler: (payload: { version: number }) => void) {
+  subscribeToChanges(environmentId: string, handler: ChangeHandler) {
+    this.attachRouter();
     const chan = this.channel(environmentId);
-    const listener = (incoming: string, message: string) => {
-      if (incoming === chan) {
+    let registrations = this.channelListeners.get(chan);
+    const wasEmpty = !registrations || registrations.size === 0;
+    if (!registrations) {
+      registrations = new Set();
+      this.channelListeners.set(chan, registrations);
+    }
+    const registration: ChannelRegistration = { handler };
+    registrations.add(registration);
+    if (wasEmpty) {
+      this.enqueueChannelOp(chan, async () => {
+        if ((this.channelListeners.get(chan)?.size ?? 0) === 0) return;
+        await this.subscriber.subscribe(chan);
+      });
+    }
+
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      const current = this.channelListeners.get(chan);
+      current?.delete(registration);
+      if (current && current.size === 0) {
+        this.channelListeners.delete(chan);
+      }
+      if ((this.channelListeners.get(chan)?.size ?? 0) > 0) return;
+      this.enqueueChannelOp(chan, async () => {
+        if ((this.channelListeners.get(chan)?.size ?? 0) > 0) return;
+        await this.subscriber.unsubscribe(chan);
+      });
+    };
+  }
+
+  private attachRouter() {
+    if (this.routerAttached) return;
+    this.routerAttached = true;
+    this.subscriber.on("message", (incoming: string, message: string) => {
+      const registrations = this.channelListeners.get(incoming);
+      if (!registrations || registrations.size === 0) return;
+      let payload: { version: number };
+      try {
+        payload = JSON.parse(message) as { version: number };
+      } catch {
+        return;
+      }
+      for (const registration of [...registrations]) {
         try {
-          handler(JSON.parse(message));
+          registration.handler(payload);
         } catch {
-          /* ignore malformed */
+          /* one listener must not block the rest of the channel */
         }
       }
-    };
-    void this.subscriber.subscribe(chan);
-    this.subscriber.on("message", listener);
-    return () => {
-      this.subscriber.off("message", listener);
-      void this.subscriber.unsubscribe(chan);
-    };
+    });
+  }
+
+  private enqueueChannelOp(channel: string, op: () => Promise<void>) {
+    const prev = this.channelQueue.get(channel) ?? Promise.resolve();
+    const next = prev.then(op, op).then(
+      () => undefined,
+      () => undefined,
+    );
+    this.channelQueue.set(channel, next);
   }
 }

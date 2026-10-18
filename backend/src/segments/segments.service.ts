@@ -4,6 +4,7 @@ import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { DatasetService } from "../dataset/dataset.service";
+import { OwnershipService } from "../common/ownership.service";
 
 export interface UpsertSegmentInput {
   key: string;
@@ -20,13 +21,19 @@ export class SegmentsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private dataset: DatasetService,
+    private ownership: OwnershipService,
   ) {}
 
-  async list(environmentId: string) {
-    return this.prisma.segment.findMany({ where: { environmentId }, orderBy: { key: "asc" } });
+  async list(projectId: string, environmentId: string) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
+    return this.prisma.segment.findMany({
+      where: { environmentId, projectId },
+      orderBy: { key: "asc" },
+    });
   }
 
   async create(projectId: string, environmentId: string, input: UpsertSegmentInput, actor: string) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
     const seg = await this.prisma.segment.create({
       data: {
         projectId,
@@ -38,6 +45,7 @@ export class SegmentsService {
         excluded: input.excluded ?? [],
         rules: input.rules ?? [],
         salt: nanoid(16),
+        version: 1,
       },
     });
     await this.audit.record({
@@ -61,10 +69,11 @@ export class SegmentsService {
     input: Partial<UpsertSegmentInput>,
     actor: string,
   ) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
     const existing = await this.prisma.segment.findUnique({
       where: { environmentId_key: { environmentId, key } },
     });
-    if (!existing) throw new NotFoundException("segment not found");
+    if (!existing || existing.projectId !== projectId) throw new NotFoundException("segment not found");
 
     const updated = await this.prisma.segment.update({
       where: { environmentId_key: { environmentId, key } },
@@ -74,6 +83,7 @@ export class SegmentsService {
         included: input.included ?? existing.included,
         excluded: input.excluded ?? existing.excluded,
         rules: input.rules ?? (existing.rules as Prisma.InputJsonValue),
+        version: { increment: 1 },
       },
     });
     await this.audit.record({
@@ -92,10 +102,11 @@ export class SegmentsService {
   }
 
   async remove(projectId: string, environmentId: string, key: string, actor: string) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
     const existing = await this.prisma.segment.findUnique({
       where: { environmentId_key: { environmentId, key } },
     });
-    if (!existing) throw new NotFoundException("segment not found");
+    if (!existing || existing.projectId !== projectId) throw new NotFoundException("segment not found");
     await this.prisma.segment.delete({ where: { id: existing.id } });
     await this.audit.record({
       projectId,

@@ -70,6 +70,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm install
+      - run: npm run test --workspace frontend
       - run: npm run typecheck --workspace frontend
       - run: npm run build --workspace frontend
 
@@ -85,3 +86,68 @@ jobs:
         working-directory: sdks/python
       - run: pytest
         working-directory: sdks/python
+
+  portfolio-smoke:
+    name: Portfolio smoke (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: flagship
+          POSTGRES_PASSWORD: flagship
+          POSTGRES_DB: flagship
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U flagship" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://flagship:flagship@localhost:5432/flagship?schema=public
+      REDIS_URL: redis://localhost:6379
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      CORS_ORIGIN: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build:sdk
+      - run: npm run prisma:generate --workspace backend
+      - run: npm run db:push --workspace backend
+      - run: npm run seed --workspace backend
+      - run: npm run build:backend
+      - run: npm run build:frontend
+      - name: Run seeded stack smoke
+        shell: bash
+        run: |
+          npm run start --workspace backend > backend.log 2>&1 &
+          npm run start --workspace frontend > frontend.log 2>&1 &
+          ready=0
+          for attempt in {1..60}; do
+            if curl --fail --silent http://localhost:4000/health >/dev/null \
+              && curl --fail --silent http://localhost:3000 >/dev/null; then
+              ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat backend.log
+            cat frontend.log
+            exit 1
+          fi
+          npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/

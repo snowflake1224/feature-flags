@@ -14,6 +14,7 @@ import { Actor } from "../common/actor.decorator";
 import { FlagsService } from "./flags.service";
 import { evaluate, type ClientDataset, type EvalContext } from "@flagship/sdk";
 import { DatasetService } from "../dataset/dataset.service";
+import { OwnershipService } from "../common/ownership.service";
 
 class CreateFlagDto {
   @Matches(/^[a-zA-Z0-9-_.]+$/)
@@ -41,6 +42,7 @@ export class FlagsController {
   constructor(
     private flags: FlagsService,
     private dataset: DatasetService,
+    private ownership: OwnershipService,
   ) {}
 
   @Post()
@@ -87,10 +89,12 @@ export class FlagsController {
   /** "Test targeting" — evaluate a flag for an arbitrary context in the UI. */
   @Post(":key/environments/:environmentId/evaluate")
   async evaluateForContext(
+    @Param("projectId") projectId: string,
     @Param("environmentId") environmentId: string,
     @Param("key") key: string,
     @Body() context: EvalContext,
   ) {
+    await this.ownership.assertEnvironmentInProject(projectId, environmentId);
     const ds: ClientDataset = await this.dataset.getDataset(environmentId);
     return evaluate(ds, key, context ?? { key: "anonymous" }, null);
   }
