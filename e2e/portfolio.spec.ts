@@ -33,8 +33,8 @@ test("seeded demo project exposes core tabs and live demo", async ({ page }) => 
 
   await page.getByRole("tab", { name: "Live demo" }).click();
   await expect(page.getByRole("heading", { name: /Data plane/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Stream" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Evaluate" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Stream", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Evaluate", exact: true })).toBeVisible();
   await expect(page.getByLabel("Context")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Event simulator" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Health" })).toBeVisible();
