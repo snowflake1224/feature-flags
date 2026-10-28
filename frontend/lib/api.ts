@@ -1,21 +1,13 @@
-import { consumeSseBuffer } from "./sse";
 import type {
   AuditEntry,
   ClientDataset,
-  CreateExperimentInput,
   CreateFlagInput,
   EvalContext,
   EvalResult,
-  Experiment,
-  ExperimentResults,
   Flag,
   FlagConfig,
   HealthReport,
   Project,
-  SdkEventInput,
-  Segment,
-  SegmentInput,
-  StreamMessage,
   UpdateConfigInput,
 } from "./types";
 
@@ -118,37 +110,6 @@ async function sdkRequest<T>(path: string, sdkKey: string, opts: RequestInit = {
   return JSON.parse(text) as T;
 }
 
-export interface SdkStreamHandlers {
-  signal?: AbortSignal;
-  onEvent: (message: StreamMessage) => void;
-  onOpen?: () => void;
-}
-
-/**
- * Authenticated dataset stream. Native EventSource cannot send Authorization,
- * so this reads the SSE body from fetch().
- */
-export async function streamSdk(sdkKey: string, handlers: SdkStreamHandlers): Promise<void> {
-  const res = await fetch(`${BASE}/sdk/stream`, {
-    headers: { Authorization: `Bearer ${sdkKey}`, Accept: "text/event-stream" },
-    cache: "no-store",
-    signal: handlers.signal,
-  });
-  if (!res.ok || !res.body) {
-    throw new Error(messageFromBody(res.status, res.statusText, await res.text()));
-  }
-  handlers.onOpen?.();
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    buffer = consumeSseBuffer(buffer, handlers.onEvent);
-  }
-}
-
 export const api = {
   base: BASE,
   listProjects: () => request<Project[]>("/projects"),
@@ -183,23 +144,6 @@ export const api = {
   deleteFlag: (projectId: string, key: string) =>
     request<{ ok: boolean }>(`/projects/${projectId}/flags/${key}`, { method: "DELETE" }),
 
-  listSegments: (projectId: string, envId: string) =>
-    request<Segment[]>(`/projects/${projectId}/environments/${envId}/segments`),
-  createSegment: (projectId: string, envId: string, body: SegmentInput) =>
-    request<Segment>(`/projects/${projectId}/environments/${envId}/segments`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  updateSegment: (projectId: string, envId: string, key: string, body: Partial<SegmentInput>) =>
-    request<Segment>(`/projects/${projectId}/environments/${envId}/segments/${key}`, {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }),
-  deleteSegment: (projectId: string, envId: string, key: string) =>
-    request<{ ok: boolean }>(`/projects/${projectId}/environments/${envId}/segments/${key}`, {
-      method: "DELETE",
-    }),
-
   listAudit: (projectId: string, opts?: { limit?: number; entityId?: string }) => {
     const params = new URLSearchParams();
     params.set("limit", String(opts?.limit ?? 200));
@@ -207,24 +151,6 @@ export const api = {
     return request<AuditEntry[]>(`/projects/${projectId}/audit?${params.toString()}`);
   },
 
-  listExperiments: (projectId: string, envId: string) =>
-    request<Experiment[]>(`/projects/${projectId}/environments/${envId}/experiments`),
-  createExperiment: (projectId: string, envId: string, body: CreateExperimentInput) =>
-    request<Experiment>(`/projects/${projectId}/environments/${envId}/experiments`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    }),
-  experimentResults: (projectId: string, envId: string, key: string) =>
-    request<ExperimentResults>(
-      `/projects/${projectId}/environments/${envId}/experiments/${key}/results`,
-    ),
-
   health: () => request<HealthReport>("/health"),
   getSdkDataset: (sdkKey: string) => sdkRequest<ClientDataset>("/sdk/dataset", sdkKey),
-  ingestSdkEvent: (sdkKey: string, event: SdkEventInput) =>
-    sdkRequest<{ ok: boolean; count?: number }>("/sdk/events", sdkKey, {
-      method: "POST",
-      body: JSON.stringify(event),
-    }),
-  streamSdk,
 };

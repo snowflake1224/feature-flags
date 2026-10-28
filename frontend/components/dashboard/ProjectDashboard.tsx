@@ -7,8 +7,6 @@ import { activeSdkKey } from "@/lib/format";
 import type { Project } from "@/lib/types";
 import { Alert, Badge, Skeleton, TabList } from "@/components/ui";
 import FlagsTab from "./FlagsTab";
-import SegmentsTab from "./SegmentsTab";
-import ExperimentsTab from "./ExperimentsTab";
 import AuditTab from "./AuditTab";
 import SettingsTab from "./SettingsTab";
 import LiveDemoTab from "./LiveDemoTab";
@@ -16,8 +14,6 @@ import DemoOnboarding from "./DemoOnboarding";
 
 const TABS = [
   { id: "Flags", label: "Flags" },
-  { id: "Segments", label: "Segments" },
-  { id: "Experiments", label: "Experiments" },
   { id: "Live demo", label: "Live demo" },
   { id: "Audit log", label: "Audit log" },
   { id: "Settings", label: "Settings" },
@@ -131,7 +127,7 @@ export default function ProjectDashboard({ projectId }: { projectId: string }) {
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-muted-foreground">Working in</span>
           <Badge color={env.production ? "red" : "green"}>{env.name}</Badge>
-          {env.production && <span className="text-xs text-amber-800">Changes publish to live SDK clients.</span>}
+          {env.production && <span className="text-xs text-amber-800">Live SDK clients pick up changes on their next fetch.</span>}
         </div>
       )}
 
@@ -147,17 +143,6 @@ export default function ProjectDashboard({ projectId }: { projectId: string }) {
           {tab === "Flags" && envId && (
             <FlagsTab projectId={projectId} envId={envId} production={production} envName={env?.name ?? "this environment"} />
           )}
-          {tab === "Segments" && envId && (
-            <SegmentsTab projectId={projectId} envId={envId} production={production} envName={env?.name ?? "this environment"} />
-          )}
-          {tab === "Experiments" && envId && (
-            <ExperimentsTab
-              projectId={projectId}
-              envId={envId}
-              envName={env?.name ?? "this environment"}
-              onOpenLive={() => setTab("Live demo")}
-            />
-          )}
           {tab === "Audit log" && <AuditTab projectId={projectId} />}
           {tab === "Settings" && <SettingsTab project={project} onChange={load} />}
         </div>
@@ -171,7 +156,6 @@ export default function ProjectDashboard({ projectId }: { projectId: string }) {
             envName={env?.name ?? "this environment"}
             sdkKey={activeSdkKey(env)}
             production={production}
-            projectKey={project.key}
             onOpenTab={setTab}
           />
         </div>

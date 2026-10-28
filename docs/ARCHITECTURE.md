@@ -1,153 +1,96 @@
-# Flagship — Architecture
+# Architecture
 
-A LaunchDarkly-style feature flag & remote config platform. This document
-covers the high-level design (HLD), low-level design (LLD) of the evaluation
-engine, and the scaling model.
-
----
-
-## 1. High-level design: control plane vs data plane
-
-Flagship is split into two planes with very different requirements.
+Four pieces: Postgres holds the config, the API compiles it into a flag set,
+clients evaluate the copy they fetched, and every change leaves an audit row.
 
 ```
-                          CONTROL PLANE                        DATA PLANE
-                    (correctness, auditability)          (latency, availability)
-
-┌───────────┐  writes   ┌──────────────┐   compile   ┌───────────┐   read    ┌───────────┐
-│ Dashboard │──────────▶│  NestJS API   │────────────▶│  Redis    │◀──────────│  SDKs     │
-│ (Next.js) │           │  + PostgreSQL │  + publish  │  (cache + │  stream/  │  (JS/TS,  │
-└───────────┘           └──────────────┘   change     │  pub/sub) │  poll     │  Python)  │
-      ▲                        │                       └───────────┘           └───────────┘
-      │ audit log              │ append-only                  │ SSE "patch"          │
-      └────────────────────────┘                              └──────────────────────┘   local eval
+Dashboard ──writes──▶ NestJS API ──▶ Postgres (config + audit)
+                          │
+                          └─ compiles flag set ─▶ Redis cache
+                                                     ▲
+JS client ── GET /sdk/dataset every few seconds ─────┘
+   └─ evaluates flags locally against the fetched copy
 ```
 
-**Control plane** (`ProjectsService`, `FlagsService`, `SegmentsService`,
-`AuditService`): CRUD over projects, environments, flags, segments, targeting
-rules. PostgreSQL is the source of truth. Every write is audited and triggers a
-recompile of the affected environment's dataset.
+## 1. Config lives in Postgres
 
-**Data plane** (`DatasetService`, `SdkController`): serves a single compiled,
-immutable ruleset per environment. The cache-hit path is a Redis read and does
-not query PostgreSQL. A cache miss recompiles from PostgreSQL. A slow admin
-query does not itself read the dataset key, but both planes run in **one**
-NestJS process (one Cloud Run service). They are not independently deployed or
-scaled: a blocked event loop, a crash, or a deploy affects admin writes and SDK
-streams together. See
-[scalability](../project-description/14-scalability-and-performance.md) and
-[design patterns](../project-description/21-design-patterns.md).
+`backend/prisma/schema.prisma` has projects, environments, SDK keys, flags, and
+one `FlagConfig` row per flag per environment. A config row holds:
 
-### Request paths
+- `on`: the kill switch.
+- `fallthrough`: either one variation, or a percentage rollout across variations.
+- `rules`: audience rules. Each rule has a clause that is either
+  `in` (an attribute equals one of the listed values) or `endsWith` (for example,
+  an email ends with `@flagship.dev`). First matching rule wins.
+- `targets`: individual user keys pinned to a variation.
+- `salt`: a per-flag random string used in the hash.
+- `version`: bumped on every write.
 
-- **Admin write** → validate → write PostgreSQL → append audit → `DatasetService.refresh()` (recompile + cache in Redis + `PUBLISH`).
-- **SDK bootstrap** → `GET /sdk/dataset` → Redis `GET` (cache hit) → JSON ruleset.
-- **SDK live updates** → `GET /sdk/stream` (SSE) → on `PUBLISH`, server emits a `patch` event → SDK re-pulls the dataset.
-- **Metric event** → `POST /sdk/events` → resolve variation at ingest → store in `Event` table for experiment analysis.
+Flags are boolean (`[true, false]`). A flag may instead serve string
+variations. The API rejects other rule operators.
 
----
+Every write goes through `FlagsService`, which updates Postgres, records an
+audit row, and calls `DatasetService.refresh()` to rebuild the cached flag set
+for that environment.
 
-## 2. Low-level design: the evaluation engine
+## 2. Clients evaluate the copy they fetched
 
-The engine (`packages/sdk-js/src/engine.ts`, ported to Python) is **pure and
-synchronous**: `(dataset, flagKey, context, default) → { value, variationIndex, reason }`.
-It runs identically on the server (dashboard "test targeting", event ingest)
-and inside every SDK, so there is exactly one source of evaluation truth.
+`GET /sdk/dataset` (authenticated with an environment SDK key) returns every
+flag in the environment as one JSON document. It comes from Redis when cached
+and is rebuilt from Postgres otherwise.
 
-### Evaluation order (first match wins)
+The JavaScript client (`packages/sdk-js/src/client.ts`) fetches that document,
+then fetches it again a few seconds after each response returns. Fetches never
+overlap, so a slow response cannot overwrite a newer one. `boolVariation()`
+evaluates synchronously against the copy in memory and never touches the
+network.
 
-1. **Prerequisites** — if a prerequisite flag is off or serves the wrong
-   variation, fail closed to `offVariation`.
-2. **Kill switch** — if `flag.on === false`, serve `offVariation` for everyone.
-3. **Individual targets** — exact context-key matches (`Target[]`).
-4. **Targeting rules** — first rule whose clauses all match wins.
-5. **Fallthrough** — the default rule: a single variation or a % rollout.
+Consequences:
 
-### Rule parser / clause matching
+- A flag read costs a map lookup and one SHA-1, and it keeps working if the API
+  is down (the client serves its last copy; `maxStalenessMs` can cap that).
+- A toggle takes effect on each client's next fetch. Worst case is one polling
+  interval. A production kill switch would add a push channel; this project
+  does not.
 
-A rule is `{ clauses: Clause[], variation | rollout }`. A clause is
-`{ attribute, op, values[], negate }`. Clauses on a rule are AND-ed; the
-`values` within a clause are OR-ed. Multi-valued context attributes match if
-**any** element satisfies the clause. Operators: equality (`in`/`notIn`),
-string (`contains`, `startsWith`, `endsWith`, `matchesRegex`), numeric
-(`greaterThan`, …), `semver*`, date (`before`/`after`), and `segmentMatch`
-(delegates to reusable segments with their own include/exclude/rule logic).
+The evaluation engine (`packages/sdk-js/src/engine.ts`) is pure. The API uses
+the same engine for the dashboard's "test targeting" panel. The dashboard's
+browser copy (`frontend/lib/local-eval.ts`) reimplements it with a pure-JS
+SHA-1, and its tests pin the same hash output as the SDK tests.
 
-### Stable rollout algorithm
+Evaluation order: prerequisites, then the kill switch, then individual targets,
+then rules, then the fallthrough.
 
-Percentage rollouts must be **sticky**: a user in the first 10% must stay there
-when you ramp to 20%, never flip-flopping. We achieve this with deterministic
-bucketing (`hash.ts`):
+## 3. Hash stickiness
 
 ```
-point   = sha1(`${flagKey}.${salt}.${bucketByValue}`)[:15 hex]  / 0xFFFFFFFFFFFFFFF   ∈ [0,1)
-variation = first weighted bucket whose cumulative weight exceeds `point`
+point = first 15 hex digits of sha1("<flagKey>.<salt>.<userKey>") / 0xFFFFFFFFFFFFFFF
 ```
 
-- Same `(flagKey, salt, bucketBy)` → same point, forever → stickiness.
-- The per-flag `salt` decorrelates rollouts across flags so a user isn't always
-  in the "unlucky" bucket everywhere.
-- SHA-1 gives good uniformity; the unit tests assert a 10% bucket lands within
-  8–12% over 20k keys and that ramping 10%→20% never evicts anyone.
+`point` is in `[0, 1)` and never changes for a given flag, salt, and user. A
+rollout of `p` percent includes the user when `point < p / 100`. Raising the
+percentage only widens the interval, so everyone already inside stays inside.
+Lowering it removes users from the top of the interval only.
 
-The Python and TypeScript implementations use the same formula. Their separate
-test runners both consume `testdata/golden-vectors.json`, covering exact bucket
-points and representative evaluations. This proves parity for those cases,
-while behavior outside the fixture can still drift between ports. See
-[algorithms](../project-description/18-algorithms-and-data-structures.md).
+The salt keeps flags independent: the user who lands in the first 10% of one
+flag is not systematically in the first 10% of every flag.
 
----
+Tests: `packages/sdk-js/test/hash.test.ts` checks determinism, rough uniformity
+(a 10% bucket holds 8 to 12% of 20,000 keys), and that no key inside 10% is
+outside 20%. `engine.test.ts` runs the same check through full flag evaluation.
 
-## 3. Scaling & operational behavior
+## 4. Audit row
 
-### Edge cache / low-latency reads
+`AuditService.record()` appends one `AuditLog` row per change with the actor
+(from the dashboard's `x-actor-email` header), the action (`flag.enabled`,
+`flag.killswitch`, `flag.updated`, ...), a comment, and before/after JSON. Rows
+are never updated or deleted by the API. The dashboard's Audit log tab lists
+them with a diff view.
 
-- The compiled dataset is cached in Redis; `GET /sdk/dataset` is a single Redis
-  read. Put Cloud CDN / a reverse proxy in front with a short TTL + `ETag`/
-  version for near-edge reads.
-- SDKs evaluate **locally** — after the initial dataset load, a flag read is an
-  in-memory map lookup + hash, i.e. microseconds and zero network. The k6 test
-  (`infra/k6/eval-latency.js`) exercises the dataset read path with a p95 < 50ms
-  target.
+The actor header is not authentication. `ADMIN_API_KEY` gates the dashboard
+routes; real deployments would replace both with proper sign-in.
 
-### SDK polling vs streaming
+## Metrics
 
-| | Streaming (SSE, default) | Polling |
-|---|---|---|
-| Freshness | ~milliseconds (kill switch) | up to the interval |
-| Connections | 1 long-lived per client | 1 request/interval |
-| Best for | most apps, incident response | locked-down networks, batch jobs |
-
-On change, the server publishes a lightweight `patch` (just the new version)
-rather than the full payload, so fan-out cost is tiny; clients pull the full
-dataset only when their version is behind.
-
-### Stale config behavior
-
-If the API/Redis is unreachable, SDKs keep serving the **last good dataset**
-(availability over freshness — the right call for flags). `maxStalenessMs` lets
-safety-critical consumers fall back to in-code defaults after a threshold.
-Bootstrapping from a local dataset lets SDKs start instantly and offline.
-
-### Near-real-time kill switch propagation
-
-`FlagsService.toggle()` is an isolated, single-row update + audit + `refresh()`.
-The `refresh()` `PUBLISH` reaches every subscribed SSE stream immediately, so a
-kill switch propagates roughly as fast as Redis pub/sub + one dataset pull —
-typically well under a second globally.
-
-### Horizontal scaling
-
-- API instances are stateless; SSE fan-out works across instances because every
-  instance subscribes to the same Redis channel. Scale Cloud Run on CPU/conns.
-- PostgreSQL is only on the write path and the (rare) cache-miss recompile.
-- Redis is the shared cache + bus; use a replicated/clustered tier in prod.
-
-### Experiments pipeline
-
-Metric events (`pricing_viewed`, `subscribed`, …) are ingested with the
-variation resolved deterministically at write time (works for key-bucketed
-rollouts). Results group exposures/conversions by variation and run a
-two-proportion z-test vs control to flag statistical significance. For high
-volume, move ingestion behind Redis Streams / Kafka and aggregate into
-ClickHouse/BigQuery instead of scanning the `Event` table.
+`GET /metrics` serves three in-process Prometheus counters (they reset on
+restart): kill switch flips, flag set fetches, and API-side evaluations.

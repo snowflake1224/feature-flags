@@ -20,6 +20,7 @@ jobs:
           cache: npm
       - run: npm install
       - run: npm run build --workspace @flagship/sdk
+      - run: npm run typecheck --workspace @flagship/sdk
       - run: npm run test --workspace @flagship/sdk
 
   backend:
@@ -55,6 +56,7 @@ jobs:
       - run: npm run build --workspace @flagship/sdk
       - run: npm run prisma:generate --workspace backend
       - run: npm run db:push --workspace backend
+      - run: npm run typecheck --workspace backend
       - run: npm run test --workspace backend
       - run: npm run build --workspace backend
 
@@ -73,19 +75,6 @@ jobs:
       - run: npm run test --workspace frontend
       - run: npm run typecheck --workspace frontend
       - run: npm run build --workspace frontend
-
-  sdk-python:
-    name: SDK (Python)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install -e ".[dev]"
-        working-directory: sdks/python
-      - run: pytest
-        working-directory: sdks/python
 
   portfolio-smoke:
     name: Portfolio smoke (Playwright)

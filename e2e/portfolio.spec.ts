@@ -1,10 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * Walk through the seeded Demo Project and exercise its showcase path.
- * Assumes `npm run dev:frontend` and a seeded API are already running.
+ * Walk through the seeded Demo Project: toggle a flag, watch the polling
+ * client pick it up on the next fetch, and find the audit row.
+ * Assumes the frontend and a seeded API are already running.
  */
-test("seeded demo project exposes core tabs and live demo", async ({ page }) => {
+test("seeded demo project: toggle shows up on the next fetch and is audited", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Projects" })).toBeVisible();
   await expect(page.getByText("Demo Project").first()).toBeVisible();
@@ -16,45 +17,28 @@ test("seeded demo project exposes core tabs and live demo", async ({ page }) => 
   await expect(page.getByRole("heading", { name: "Five-minute demo" })).toBeVisible();
   await expect(page.getByText("node examples/node-demo/index.mjs")).toBeVisible();
 
-  for (const name of ["Flags", "Segments", "Experiments", "Live demo", "Audit log", "Settings"]) {
+  for (const name of ["Flags", "Live demo", "Audit log", "Settings"]) {
     await expect(page.getByRole("tab", { name })).toBeVisible();
   }
 
   await page.getByRole("tab", { name: "Flags" }).click();
   await expect(page.getByText("New Checkout Flow")).toBeVisible();
-  await expect(page.getByText("Pricing Page Experiment")).toBeVisible();
-
-  await page.getByRole("tab", { name: "Segments" }).click();
-  await expect(page.getByText("Beta Users")).toBeVisible();
-  await expect(page.getByText("beta-users")).toBeVisible();
-
-  await page.getByRole("tab", { name: "Experiments" }).click();
-  await expect(page.getByRole("button", { name: "Pricing Layout A/B" })).toBeVisible();
 
   await page.getByRole("tab", { name: "Live demo" }).click();
-  await expect(page.getByRole("heading", { name: /Data plane/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Stream", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /SDK view/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Fetches", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Evaluate", exact: true })).toBeVisible();
   await expect(page.getByLabel("Context")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Event simulator" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Health" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Guided checklist" })).toBeVisible();
-  await expect(page.getByText(/^live/)).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByText(/^polling/)).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("button", { name: "Compare" }).first().click();
   await expect(page.getByText("Server", { exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: "Turn off" }).first().click();
   await page.getByRole("button", { name: "Apply in production" }).click();
-  await expect(page.getByText("patch", { exact: true })).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText(/ms refresh/)).toBeVisible();
-
-  await page.getByRole("button", { name: "Send exposure" }).click();
-  await expect(page.getByText(/Sent pricing_viewed/)).toBeVisible();
-  await page.getByRole("button", { name: "Send goal" }).click();
-  await expect(page.getByText(/Sent subscribed/)).toBeVisible();
-  await page.getByRole("button", { name: "Refresh results" }).click();
-  await expect(page.getByText(/exposures/).last()).toBeVisible();
+  await expect(page.getByText(/new-checkout is off in v\d+/)).toBeVisible({ timeout: 20_000 });
 
   await page.getByRole("button", { name: "Inspect audit" }).click();
   await expect(page.getByText("Control-plane writes are appended")).toBeVisible();
@@ -69,11 +53,6 @@ test("seeded demo project exposes core tabs and live demo", async ({ page }) => 
 
   await page.getByRole("button", { name: "development" }).click();
   await expect(page.getByRole("button", { name: "development" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("tab", { name: "Experiments" }).click();
-  await expect(page.getByText("No experiments in this environment")).toBeVisible();
-
-  await page.getByRole("button", { name: "production · prod" }).click();
-  await expect(page.getByRole("button", { name: "production · prod" })).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("tab", { name: "Flags" }).click();
   await expect(page.getByText("New Checkout Flow")).toBeVisible();
 

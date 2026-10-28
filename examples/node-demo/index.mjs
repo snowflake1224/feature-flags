@@ -5,28 +5,24 @@ import { FlagshipClient } from "@flagship/sdk";
 const client = new FlagshipClient({
   sdkKey: process.env.SDK_KEY || "sdk-production-demo00000000",
   baseUrl: process.env.API_URL || "http://localhost:4000",
-  mode: "streaming",
+  pollingIntervalMs: 3_000,
 });
 
 await client.start();
 
 const users = [
-  { key: "user-1", country: "US", email: "a@example.com" },
-  { key: "user-beta-1", country: "DE", email: "b@flagship.dev" },
-  { key: "user-42", country: "FR" },
+  { key: "user-1", email: "a@example.com" },
+  { key: "user-2", email: "ada@flagship.dev" },
+  { key: "user-42" },
 ];
 
 for (const u of users) {
-  const checkout = client.boolVariation("new-checkout", u, false);
-  const pricing = client.stringVariation("pricing-experiment", u, "control");
-  console.log(`${u.key.padEnd(12)} new-checkout=${checkout}  pricing=${pricing}`);
-  // record an experiment exposure + a random conversion
-  await client.track("pricing_viewed", u, { flagKey: "pricing-experiment" });
-  if (Math.random() < 0.12) await client.track("subscribed", u, { flagKey: "pricing-experiment", value: 19 });
+  console.log(`${u.key.padEnd(10)} new-checkout=${client.boolVariation("new-checkout", u, false)}`);
 }
 
-console.log("\nStreaming for changes — flip the kill switch in the dashboard to see updates.");
-client.onChange(() => console.log("[dataset updated] new-checkout =", client.boolVariation("new-checkout", users[0], false)));
+console.log("\nPolling every 3s. Flip new-checkout in the dashboard; it shows up on the next fetch.");
+client.onChange(() =>
+  console.log("[flag set changed] user-2 new-checkout =", client.boolVariation("new-checkout", users[1], false)),
+);
 
-// keep alive for a bit to observe streaming updates
 setTimeout(() => client.close(), 60_000);

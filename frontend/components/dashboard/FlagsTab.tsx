@@ -7,13 +7,10 @@ import type { Flag, FlagKind } from "@/lib/types";
 import { Alert, Badge, Button, Card, ConfirmDialog, EmptyState, Field, Input, Select, Skeleton, Toggle } from "@/components/ui";
 import FlagDrawer from "./FlagDrawer";
 
-const KINDS: FlagKind[] = ["boolean", "string", "number", "json"];
+const KINDS: FlagKind[] = ["boolean", "string"];
 
 function variationsFor(kind: FlagKind) {
-  if (kind === "boolean") return [true, false];
-  if (kind === "number") return [1, 0];
-  if (kind === "json") return [{}, {}];
-  return ["on", "off"];
+  return kind === "boolean" ? [true, false] : ["on", "off"];
 }
 
 export default function FlagsTab({
@@ -123,7 +120,7 @@ export default function FlagsTab({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-xl text-sm text-muted-foreground">
-          The switch is the kill switch for {envName}. Open a flag to edit rollout, rules, prerequisites, and to test a context.
+          The switch is the kill switch for {envName}. Open a flag to edit the rollout percentage, audience rules, and to test a context.
         </p>
         <Button size="sm" onClick={() => setCreating((value) => !value)} aria-expanded={creating}>
           {creating ? "Close form" : "New flag"}
@@ -132,7 +129,7 @@ export default function FlagsTab({
 
       {production && (
         <Alert tone="warning" title="Production">
-          Toggles and deletes here publish immediately to SDK clients using this environment.
+          Toggles and deletes here reach SDK clients for this environment on their next fetch.
         </Alert>
       )}
       {notice && (
@@ -257,7 +254,7 @@ export default function FlagsTab({
       <ConfirmDialog
         open={!!pendingToggle}
         title={pendingToggle ? `${pendingToggle.on ? "Enable" : "Kill"} ${pendingToggle.flag.name} in production?` : "Confirm"}
-        description="Connected clients pick this up from the dataset stream within milliseconds."
+        description="Clients pick this up on their next fetch, a few seconds at most. The audit log records who flipped it."
         confirmLabel={pendingToggle?.on ? "Enable in production" : "Kill in production"}
         danger={!pendingToggle?.on}
         onConfirm={() => pendingToggle && void toggle(pendingToggle.flag, pendingToggle.on)}

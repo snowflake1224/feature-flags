@@ -1,13 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import type { ClientDataset, Flag, Segment } from "@flagship/sdk";
+import type { ClientDataset, Flag } from "@flagship/sdk";
 import { PrismaService } from "../prisma/prisma.service";
 import { RedisService } from "../redis/redis.service";
 
 /**
- * Compiles the control-plane tables into a single immutable ruleset per
- * environment (the "data plane" artifact), caches it in Redis, and fans out
- * change notifications. Every flag/segment write path calls `refresh()` so the
- * cache and all connected SDK streams converge within milliseconds.
+ * Compiles the Postgres flag config into one flag set per environment and
+ * caches it in Redis. Every flag write path calls `refresh()`; polling clients
+ * see the change on their next fetch.
  */
 @Injectable()
 export class DatasetService {
@@ -26,8 +25,6 @@ export class DatasetService {
       include: { flag: true },
     });
 
-    const segments = await this.prisma.segment.findMany({ where: { environmentId } });
-
     const flags: Record<string, Flag> = {};
     for (const cfg of configs) {
       flags[cfg.flag.key] = {
@@ -44,29 +41,10 @@ export class DatasetService {
       };
     }
 
-    const segmentMap: Record<string, Segment> = {};
-    for (const seg of segments) {
-      segmentMap[seg.key] = {
-        key: seg.key,
-        included: seg.included,
-        excluded: seg.excluded,
-        rules: seg.rules as unknown as Segment["rules"],
-        salt: seg.salt,
-      };
-    }
-
-    // Flag config versions plus a coarse segment-count term (create/delete).
-    // Segment.version is summed too, so editing rules without changing the
-    // segment count still produces a new dataset version.
-    const flagVersion = configs.reduce((acc, c) => acc + c.version, 0);
-    const segmentVersion = segments.reduce((acc, seg) => acc + seg.version, 0);
-    const version = flagVersion + segments.length * 1_000_000 + segmentVersion;
-
     return {
       environmentKey: environment.key,
-      version,
+      version: configs.reduce((acc, c) => acc + c.version, 0),
       flags,
-      segments: segmentMap,
     };
   }
 
@@ -78,11 +56,10 @@ export class DatasetService {
     return dataset;
   }
 
-  /** Rebuild cache and notify subscribers. Call after every write. */
+  /** Rebuild the cached flag set. Call after every write. */
   async refresh(environmentId: string): Promise<ClientDataset> {
     const dataset = await this.buildDataset(environmentId);
     await this.redis.cacheDataset(environmentId, dataset);
-    await this.redis.publishChange(environmentId, { version: dataset.version });
     return dataset;
   }
 }

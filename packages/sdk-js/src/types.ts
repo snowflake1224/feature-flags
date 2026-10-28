@@ -1,33 +1,20 @@
 // Core data model for the Flagship evaluation engine.
-// These types are shared verbatim between the backend (server-side eval,
-// dashboard "test targeting") and the client SDK (local evaluation).
+// These types are shared verbatim between the backend (dashboard "test
+// targeting") and the client SDK (local evaluation).
 
-export type FlagValue = boolean | string | number | Record<string, unknown> | null;
+/** Boolean flags are the default; a flag may also serve string variations. */
+export type FlagValue = boolean | string | null;
 
-export type ClauseOp =
-  | "in"
-  | "notIn"
-  | "contains"
-  | "startsWith"
-  | "endsWith"
-  | "matchesRegex"
-  | "greaterThan"
-  | "greaterThanOrEqual"
-  | "lessThan"
-  | "lessThanOrEqual"
-  | "semverEqual"
-  | "semverGreaterThan"
-  | "semverLessThan"
-  | "before"
-  | "after"
-  | "segmentMatch";
+/**
+ * `in`: the attribute equals one of `values`.
+ * `endsWith`: the attribute is a string ending with one of `values` (e.g. an email domain).
+ */
+export type ClauseOp = "in" | "endsWith";
 
 export interface Clause {
   attribute: string;
   op: ClauseOp;
-  values: Array<string | number | boolean>;
-  /** invert the result of the clause */
-  negate?: boolean;
+  values: string[];
 }
 
 export interface WeightedVariation {
@@ -41,8 +28,6 @@ export interface Rollout {
   variations: WeightedVariation[];
   /** context attribute used for bucketing; defaults to the context key */
   bucketBy?: string;
-  /** optional seed to reshuffle buckets independently of the flag salt */
-  seed?: number;
 }
 
 export interface VariationOrRollout {
@@ -85,28 +70,12 @@ export interface Flag {
   version: number;
 }
 
-export interface Segment {
-  key: string;
-  included: string[];
-  excluded: string[];
-  rules: SegmentRule[];
-  salt: string;
-}
-
-export interface SegmentRule {
-  clauses: Clause[];
-  /** optional rollout: only include a % of matching contexts */
-  weight?: number;
-  bucketBy?: string;
-}
-
 /** The full ruleset an SDK downloads for one environment. */
 export interface ClientDataset {
   environmentKey: string;
-  /** monotonically increasing; used to detect staleness */
+  /** sum of flag config versions; changes whenever any flag changes */
   version: number;
   flags: Record<string, Flag>;
-  segments: Record<string, Segment>;
 }
 
 export interface EvalContext {
@@ -129,8 +98,7 @@ export interface EvalReason {
   ruleId?: string;
   ruleIndex?: number;
   prerequisiteKey?: string;
-  errorKind?: "FLAG_NOT_FOUND" | "MALFORMED_FLAG" | "WRONG_TYPE";
-  inExperiment?: boolean;
+  errorKind?: "FLAG_NOT_FOUND" | "MALFORMED_FLAG";
 }
 
 export interface EvalResult<T extends FlagValue = FlagValue> {

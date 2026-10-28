@@ -1,7 +1,8 @@
 {
   "name": "@flagship/sdk",
   "version": "0.1.0",
-  "description": "Flagship feature flag SDK for JavaScript / Node.js with a shared evaluation engine",
+  "private": true,
+  "description": "Flagship JavaScript client: fetches the flag set and evaluates it locally",
   "license": "MIT",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -23,21 +24,13 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
-    "test:parity": "vitest run test/golden-vectors.test.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "eventsource": "^2.0.2"
-  },
   "devDependencies": {
-    "@types/eventsource": "^1.1.15",
     "@types/node": "^20.11.30",
     "tsup": "^8.0.2",
     "typescript": "^5.4.5",
     "vitest": "^1.5.0"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

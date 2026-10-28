@@ -12,10 +12,6 @@ const ACTION_COLOR: Record<string, "green" | "red" | "blue" | "amber" | "gray"> 
   "flag.created": "blue",
   "flag.updated": "amber",
   "flag.deleted": "red",
-  "segment.created": "blue",
-  "segment.updated": "amber",
-  "segment.deleted": "red",
-  "experiment.created": "blue",
   "sdkkey.rotated": "amber",
 };
 

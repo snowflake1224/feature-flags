@@ -8,6 +8,10 @@ describe("stable rollout hashing", () => {
     expect(a).toBe(b);
   });
 
+  it("matches a fixed point so the hash cannot drift silently", () => {
+    expect(bucket("new-checkout", "checkoutsalt00000", "user-42")).toBe(0.5588033430205928);
+  });
+
   it("produces values in [0, 1)", () => {
     for (let i = 0; i < 1000; i++) {
       const p = bucket("flag", "salt", `user-${i}`);
@@ -44,7 +48,7 @@ describe("stable rollout hashing", () => {
     const N = 20000;
     for (let i = 0; i < N; i++) {
       const point = bucket("f", "s", `u-${i}`);
-      const { variation } = pickVariation(point, [
+      const variation = pickVariation(point, [
         { variation: 0, weight: 30 },
         { variation: 1, weight: 70 },
       ]);

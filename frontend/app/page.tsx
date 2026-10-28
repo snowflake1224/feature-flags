@@ -63,7 +63,7 @@ export default function ProjectsPage() {
         <p className="text-xs font-medium uppercase tracking-wide text-primary">Control plane</p>
         <h1 className="mt-1 text-2xl font-semibold sm:text-3xl">Projects</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Each project isolates environments, flags, segments, and SDK keys. Open one to edit targeting, watch the dataset stream, and read experiment results.
+          Each project isolates environments, flags, and SDK keys. Open one to edit a rollout, flip a flag, and read who flipped it.
         </p>
       </div>
 
@@ -73,7 +73,7 @@ export default function ProjectsPage() {
             <div>
               <div className="text-sm font-medium">Guided demo is ready</div>
               <p className="mt-1 text-sm text-muted-foreground">
-                {demo.name} includes a checkout rollout, a beta segment, and a pricing experiment.
+                {demo.name} includes a 20% checkout rollout with one email-domain rule.
               </p>
             </div>
             <Link href={`/projects/${demo.id}`}>

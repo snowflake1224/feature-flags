@@ -1,59 +1,41 @@
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { evaluateLocal } from "../lib/local-eval";
+import { bucket, evaluateLocal } from "../lib/local-eval";
 import { sha1Hex } from "../lib/sha1";
-import type { ClientDataset, EvalContext, EvalResult, FlagValue } from "../lib/types";
+import type { ClientDataset, DatasetFlag } from "../lib/types";
 
-interface EvalVector {
-  name: string;
-  dataset: ClientDataset;
-  flagKey: string;
-  context: EvalContext;
-  defaultValue: FlagValue;
-  expected: {
-    value: FlagValue;
-    variationIndex: number | null;
-    reason: Record<string, unknown>;
-    flagVersion?: number;
+function checkout(percent: number, partial: Partial<DatasetFlag> = {}): ClientDataset {
+  return {
+    environmentKey: "production",
+    version: 1,
+    flags: {
+      "new-checkout": {
+        key: "new-checkout",
+        on: true,
+        variations: [true, false],
+        offVariation: 1,
+        fallthrough: {
+          rollout: {
+            variations: [
+              { variation: 0, weight: percent },
+              { variation: 1, weight: 100 - percent },
+            ],
+          },
+        },
+        targets: [],
+        rules: [
+          {
+            id: "staff-email",
+            clauses: [{ attribute: "email", op: "endsWith", values: ["@flagship.dev"] }],
+            variation: 0,
+          },
+        ],
+        prerequisites: [],
+        salt: "checkoutsalt00000",
+        version: 3,
+        ...partial,
+      },
+    },
   };
-}
-
-function loadGoldenEvaluations(): EvalVector[] {
-  const starts = [process.cwd(), dirname(fileURLToPath(import.meta.url))];
-  const seen = new Set<string>();
-  for (const start of starts) {
-    let dir = resolve(start);
-    for (let i = 0; i < 12; i++) {
-      if (seen.has(dir)) break;
-      seen.add(dir);
-      const candidate = join(dir, "testdata", "golden-vectors.json");
-      if (existsSync(candidate)) {
-        const parsed = JSON.parse(readFileSync(candidate, "utf8")) as { evaluations: EvalVector[] };
-        return parsed.evaluations;
-      }
-      const parent = dirname(dir);
-      if (parent === dir) break;
-      dir = parent;
-    }
-  }
-  throw new Error("testdata/golden-vectors.json not found");
-}
-
-function sharedResult(result: EvalResult) {
-  const reason: Record<string, unknown> = { kind: result.reason.kind };
-  if (result.reason.ruleId !== undefined) reason.ruleId = result.reason.ruleId;
-  if (result.reason.ruleIndex !== undefined) reason.ruleIndex = result.reason.ruleIndex;
-  if (result.reason.prerequisiteKey !== undefined) reason.prerequisiteKey = result.reason.prerequisiteKey;
-  if (result.reason.errorKind !== undefined) reason.errorKind = result.reason.errorKind;
-  const out: EvalVector["expected"] = {
-    value: result.value,
-    variationIndex: result.variationIndex,
-    reason,
-  };
-  if (result.flagVersion !== undefined) out.flagVersion = result.flagVersion;
-  return out;
 }
 
 describe("local evaluation", () => {
@@ -61,12 +43,33 @@ describe("local evaluation", () => {
     expect(sha1Hex("abc")).toBe("a9993e364706816aba3e25717850c26c9cd0d89d");
   });
 
-  it("matches the shared evaluation golden vectors", () => {
-    const evaluations = loadGoldenEvaluations();
-    expect(evaluations.length).toBeGreaterThan(0);
-    for (const row of evaluations) {
-      const result = evaluateLocal(row.dataset, row.flagKey, row.context, row.defaultValue);
-      expect(sharedResult(result), row.name).toEqual(row.expected);
+  it("buckets exactly like the SDK", () => {
+    expect(bucket("new-checkout", "checkoutsalt00000", "user-42")).toBe(0.5588033430205928);
+  });
+
+  it("matches the email-domain rule before the rollout", () => {
+    const result = evaluateLocal(checkout(0), "new-checkout", { key: "u1", email: "ada@flagship.dev" });
+    expect(result.value).toBe(true);
+    expect(result.reason).toEqual({ kind: "RULE_MATCH", ruleId: "staff-email", ruleIndex: 0 });
+  });
+
+  it("keeps users included at 10% when the rollout grows to 20%", () => {
+    for (let i = 0; i < 2000; i++) {
+      const ctx = { key: `user-${i}` };
+      if (evaluateLocal(checkout(10), "new-checkout", ctx).value === true) {
+        expect(evaluateLocal(checkout(20), "new-checkout", ctx).value).toBe(true);
+      }
     }
+  });
+
+  it("serves the off variation when the kill switch is off", () => {
+    const result = evaluateLocal(checkout(100, { on: false }), "new-checkout", { key: "u1", email: "ada@flagship.dev" });
+    expect(result.value).toBe(false);
+    expect(result.reason.kind).toBe("OFF");
+  });
+
+  it("reports a missing flag", () => {
+    const result = evaluateLocal(checkout(20), "nope", { key: "u1" }, false);
+    expect(result).toEqual({ value: false, variationIndex: null, reason: { kind: "ERROR", errorKind: "FLAG_NOT_FOUND" } });
   });
 });

@@ -2,7 +2,7 @@
   "name": "flagship",
   "version": "0.1.0",
   "private": true,
-  "description": "Flagship — a LaunchDarkly-style feature flag & remote config platform",
+  "description": "Flagship — boolean feature flags with sticky percentage rollouts",
   "workspaces": [
     "packages/*",
     "backend",
@@ -15,8 +15,6 @@
     "dev:backend": "npm run start:dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
     "test": "npm run test --workspace @flagship/sdk && npm run test --workspace backend && npm run test --workspace frontend",
-    "test:parity": "npm run test:parity --workspace @flagship/sdk && npm run test:parity:python",
-    "test:parity:python": "python -m pytest sdks/python/tests/test_golden_vectors.py",
     "test:e2e": "playwright test",
     "infra:up": "docker compose up -d postgres redis",
     "infra:down": "docker compose down"

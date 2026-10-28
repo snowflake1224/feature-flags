@@ -142,12 +142,6 @@ const client = new FlagshipClient({
 });
 await client.start();
 console.log(client.boolVariation("new-checkout", { key: "user-1" }, false));`;
-  const python = `from flagship import FlagshipClient
-
-client = FlagshipClient(sdk_key="${sdkKey}", base_url="${base}")
-client.start()
-print(client.bool_variation("new-checkout", {"key": "user-1"}, False))
-client.close()`;
   const curl = `curl -s -H "Authorization: Bearer ${sdkKey}" ${base}/sdk/dataset`;
 
   return (
@@ -156,7 +150,6 @@ client.close()`;
       <div className="mt-3 space-y-3">
         <Snippet label="cURL dataset" code={curl} />
         <Snippet label="Node" code={node} />
-        <Snippet label="Python" code={python} />
       </div>
     </details>
   );

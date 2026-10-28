@@ -4,8 +4,7 @@ import type { ClientDataset } from "@flagship/sdk";
 import { OwnershipService } from "../src/common/ownership.service";
 import { FlagsController } from "../src/flags/flags.controller";
 import { FlagsService } from "../src/flags/flags.service";
-import { SegmentsService } from "../src/segments/segments.service";
-import { ExperimentsService } from "../src/experiments/experiments.service";
+import { MetricsService } from "../src/metrics/metrics.service";
 import { ProjectsService } from "../src/projects/projects.service";
 
 function ownershipWith(
@@ -64,34 +63,6 @@ describe("environment ownership", () => {
 describe("ownership on write and read paths", () => {
   const mismatch = new BadRequestException("environment does not belong to project");
 
-  it("does not create a segment when the environment is not in the project", async () => {
-    const create = vi.fn();
-    const prisma = { segment: { create } };
-    const ownership = { assertEnvironmentInProject: vi.fn(async () => Promise.reject(mismatch)) };
-    const svc = new SegmentsService(prisma as never, {} as never, { refresh: vi.fn() } as never, ownership as never);
-    await expect(
-      svc.create("proj-a", "env-b", { key: "beta", name: "Beta" }, "ada"),
-    ).rejects.toBe(mismatch);
-    expect(create).not.toHaveBeenCalled();
-  });
-
-  it("lists experiments only inside the owning project", async () => {
-    const findMany = vi.fn(async () => []);
-    const ownership = {
-      assertEnvironmentInProject: vi.fn(async () => ({ id: "env-a", projectId: "proj-a", key: "production" })),
-    };
-    const svc = new ExperimentsService({ experiment: { findMany } } as never, {} as never, ownership as never);
-    await svc.list("proj-a", "env-a");
-    expect(ownership.assertEnvironmentInProject).toHaveBeenCalledWith("proj-a", "env-a");
-    expect(findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { environmentId: "env-a", projectId: "proj-a" } }),
-    );
-
-    ownership.assertEnvironmentInProject.mockRejectedValueOnce(mismatch);
-    await expect(svc.list("proj-a", "env-b")).rejects.toBe(mismatch);
-    expect(findMany).toHaveBeenCalledTimes(1);
-  });
-
   it("does not update a flag config when ownership fails", async () => {
     const findUnique = vi.fn();
     const ownership = { assertEnvironmentInProject: vi.fn(async () => Promise.reject(mismatch)) };
@@ -100,6 +71,7 @@ describe("ownership on write and read paths", () => {
       {} as never,
       { refresh: vi.fn() } as never,
       ownership as never,
+      new MetricsService(),
     );
     await expect(svc.updateConfig("proj-a", "checkout", "env-b", { on: true }, "ada")).rejects.toBe(
       mismatch,
@@ -111,7 +83,7 @@ describe("ownership on write and read paths", () => {
   it("does not evaluate another project's environment", async () => {
     const getDataset = vi.fn();
     const ownership = { assertEnvironmentInProject: vi.fn(async () => Promise.reject(new NotFoundException("environment not found"))) };
-    const controller = new FlagsController({} as never, { getDataset } as never, ownership as never);
+    const controller = new FlagsController({} as never, { getDataset } as never, ownership as never, new MetricsService());
     await expect(
       controller.evaluateForContext("proj-a", "env-b", "checkout", { key: "ada" }),
     ).rejects.toBeInstanceOf(NotFoundException);
@@ -119,12 +91,12 @@ describe("ownership on write and read paths", () => {
   });
 
   it("evaluates after the environment is confirmed", async () => {
-    const empty: ClientDataset = { environmentKey: "production", version: 1, flags: {}, segments: {} };
+    const empty: ClientDataset = { environmentKey: "production", version: 1, flags: {} };
     const getDataset = vi.fn(async () => empty);
     const ownership = {
       assertEnvironmentInProject: vi.fn(async () => ({ id: "env-a", projectId: "proj-a", key: "production" })),
     };
-    const controller = new FlagsController({} as never, { getDataset } as never, ownership as never);
+    const controller = new FlagsController({} as never, { getDataset } as never, ownership as never, new MetricsService());
     const result = await controller.evaluateForContext("proj-a", "env-a", "missing", { key: "ada" });
     expect(ownership.assertEnvironmentInProject).toHaveBeenCalledWith("proj-a", "env-a");
     expect(getDataset).toHaveBeenCalledWith("env-a");

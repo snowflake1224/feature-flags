@@ -16,9 +16,7 @@ export function describeReason(reason: EvalReason | undefined): string {
     case "PREREQUISITE_FAILED":
       return `Prerequisite ${reason.prerequisiteKey ?? "flag"} did not serve the required variation.`;
     case "FALLTHROUGH":
-      return reason.inExperiment
-        ? "No rule matched. Fallthrough rollout selected this variation."
-        : "No rule matched. Serving the fallthrough variation or rollout.";
+      return "No rule matched. Serving the fallthrough variation or rollout.";
     case "ERROR":
       return reason.errorKind === "FLAG_NOT_FOUND"
         ? "Flag is not in this environment dataset."
@@ -26,14 +24,4 @@ export function describeReason(reason: EvalReason | undefined): string {
     default:
       return reason.kind;
   }
-}
-
-export function pct(rate: number): string {
-  if (!Number.isFinite(rate)) return "—";
-  return `${(rate * 100).toFixed(2)}%`;
-}
-
-export function formatNumber(value: number, digits = 4): string {
-  if (!Number.isFinite(value)) return "—";
-  return value.toFixed(digits);
 }

@@ -1,157 +1,92 @@
 # Flagship
 
-A **LaunchDarkly-style feature flag & remote config platform**. Roll out
-features gradually, target users and segments, run experiments, and kill bad
-releases in near-real-time.
+Boolean feature flags with percentage rollouts, a dashboard toggle, and an audit
+row for every flip.
 
-<p>
-  <img alt="stack" src="https://img.shields.io/badge/backend-NestJS-e0234e" />
-  <img alt="db" src="https://img.shields.io/badge/db-PostgreSQL-336791" />
-  <img alt="cache" src="https://img.shields.io/badge/cache-Redis-dc382d" />
-  <img alt="frontend" src="https://img.shields.io/badge/dashboard-Next.js-black" />
-  <img alt="sdks" src="https://img.shields.io/badge/SDKs-TS%20%2B%20Python-blue" />
-</p>
+## The failure this is built around
 
-## What's inside
+You ship a feature to 10% of users, then raise it to 20%. If bucketing is random
+per request, or keyed on something that reshuffles, some of the original 10% fall
+out and see the old behavior again. Users flip between versions and your
+rollout data is worthless.
 
-| Capability | Where |
-|---|---|
-| Projects, environments, flags, segments, targeting rules | `backend/src/{projects,flags,segments}` |
-| Percentage rollouts via **stable hashing** | `packages/sdk-js/src/hash.ts` |
-| Shared **evaluation engine** (server + SDKs) | `packages/sdk-js/src/engine.ts`, `sdks/python/flagship/engine.py` |
-| **JS/TS SDK** (polling + SSE streaming) | `packages/sdk-js` |
-| **Python SDK** (polling) | `sdks/python` |
-| **Audit log** for every change | `backend/src/audit` |
-| **Kill switch** with near-real-time propagation (Redis pub/sub → SSE) | `backend/src/flags` + `backend/src/sdk` |
-| **Experiments dashboard** w/ conversion metrics + significance | `frontend` + `backend/src/experiments` |
-| Dashboard UX (Next.js + Tailwind) | `frontend` |
-| Docker, CI, **Terraform** (Cloud Run/SQL/Redis), **k6** load test | `docker-compose.yml`, `.github/workflows`, `infra` |
+Flagship buckets each user with a stable hash of `(flag, salt, user key)` mapped
+to a point in `[0, 1)`. A user is in the rollout when their point is below the
+percentage. Raising 10% to 20% only adds users whose point is in `[0.1, 0.2)`;
+nobody already inside leaves. The tests in
+[`packages/sdk-js/test`](packages/sdk-js/test) check exactly that.
 
-See **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** for the HLD (control vs data
-plane), LLD (evaluation engine, rule parser, rollout algorithm), and scaling.
-The code-backed dossier (patterns, API, failure modes, interview notes) is
-**[project-description/README.md](project-description/README.md)**. A click-by-click
-script is **[project-description/22-demo-guide.md](project-description/22-demo-guide.md)**.
+## How it works
 
-## Repository layout
+- Postgres stores the flag config: on/off, rollout percentage, and simple
+  audience rules (an attribute equals a value, or an email ends with a domain).
+- The API compiles each environment's flags into one JSON flag set and caches it
+  in Redis.
+- The JavaScript client ([`packages/sdk-js`](packages/sdk-js)) fetches that flag
+  set every few seconds and evaluates flags locally against the copy it holds.
+- The dashboard toggle flips a flag and writes an audit row with who did it.
 
-```
-feature-flags/
-├── backend/            NestJS API (control plane + data plane) + Prisma + seed
-├── frontend/           Next.js dashboard (flags, targeting, segments, audit, experiments)
-├── packages/sdk-js/    @flagship/sdk — TS engine + client (published to npm)
-├── sdks/python/        flagship-sdk — Python engine + client
-├── examples/           runnable Node & Python demos
-├── infra/terraform/    Cloud Run + Cloud SQL + Memorystore + Secret Manager
-├── infra/k6/           evaluation-latency load test
-├── docs/               architecture
-├── project-description/ technical dossier and demo guide
-└── docker-compose.yml  Postgres + Redis (+ full-stack profile)
-```
+## Run it
 
-## Quickstart (local)
-
-Prereqs: Node 20+, Docker, (optional) Python 3.9+.
+Prereqs: Node 20+ and Docker.
 
 ```bash
-cd feature-flags
-
-# 1. Install workspace deps and start Postgres + Redis
 npm install
-npm run infra:up
+npm run infra:up              # Postgres + Redis
+npm run build:sdk             # the backend imports the engine
 
-# 2. Build the SDK (the backend imports its engine)
-npm run build:sdk
-
-# 3. Set up the database + seed demo data
 cp .env.example .env
 cd backend
 npm run prisma:generate
-npm run db:push          # or: npm run prisma:migrate
-npm run seed             # creates the "demo" project, flags, a segment, an experiment
+npm run db:push
+npm run seed                  # demo project, new-checkout flag, SDK keys
 cd ..
 
-# 4. Run the API and the dashboard (two terminals)
-npm run dev:backend      # http://localhost:4000  (health: /health)
-npm run dev:frontend     # http://localhost:3000
+npm run dev:backend           # http://localhost:4000
+npm run dev:frontend          # http://localhost:3000
 ```
 
-Open the dashboard at **http://localhost:3000**, pick the **demo** project, and
-you'll see the seeded flags, a beta-users segment, the pricing A/B experiment
-with real conversion numbers, and a populated audit log. Flip a flag's toggle to
-exercise the kill switch.
+Open the **Demo Project**. `new-checkout` is a 20% rollout in production, plus
+one rule: emails ending in `@flagship.dev` always get it. The **Live demo** tab
+polls the flag set like an SDK would; turn the flag off and the next fetch shows
+the change. The **Audit log** tab shows who flipped it.
 
-The seed prints ready-to-use SDK keys:
+Node client: `node examples/node-demo/index.mjs` (uses the seeded key
+`sdk-production-demo00000000`).
 
-```
-Production SDK key:  sdk-production-demo00000000
-Development SDK key: sdk-development-demo0000000
-```
+Tests: `npm test` runs the SDK, backend, and frontend unit tests.
 
-## 5-minute browser demo
-
-Do this after the quickstart, on **production**. Full script, persona table, and
-troubleshooting: **[project-description/22-demo-guide.md](project-description/22-demo-guide.md)**.
-
-1. Open **http://localhost:3000** and open **Demo Project**. The UI selects production.
-2. On **Flags**, `new-checkout` is on: included beta keys and `@flagship.dev` emails get the new flow; everyone else is a 20% rollout. `pricing-experiment` is a 50/50 string flag.
-3. Open **Live demo** and wait for the authenticated stream’s initial `put`. Compare a browser-local evaluation with the server, then turn `new-checkout` off.
-4. Watch the tab receive a `patch`, refetch the dataset, and show the off variation plus refresh latency. That path is Postgres write → Redis cache + pub/sub → SSE `patch` → authenticated dataset fetch. Optionally run `node examples/node-demo/index.mjs` to demonstrate the same path through the Node SDK.
-5. Open **Experiments** → **Pricing Layout A/B**. Seeded production traffic (`user-0` … `user-3999`) aims at roughly 10% conversion on control and 14% on the variant. Exact counts change every seed.
-6. Open **Audit log** and confirm the toggle was recorded (actor defaults to `demo@flagship.dev`).
-
-The **Live demo** tab also sends exposure/conversion events and refreshes experiment results. Python polls and will not show the kill switch until the next interval (`python examples/python-demo/main.py`).
-
-> **TODO (screenshot):** Projects list with Demo Project. Placeholder only — do not add an image tag until the file exists.
->
-> **TODO (screenshot):** Production flags with `new-checkout` on.
->
-> **TODO (GIF):** Kill switch, then the Node log flipping `new-checkout` to false.
-
-## Secure demo configuration
-
-The quickstart leaves the control plane open so the dashboard works on localhost. Use that only on a machine you trust.
-
-Before anyone else can reach the API:
-
-- Set `ADMIN_API_KEY` to a long random value. `/projects` routes then require header `x-api-key`; save the same value in dashboard **Settings** so later control-plane requests include it.
-- Set `CORS_ORIGIN` to the dashboard origin only.
-- Do not publish Postgres or Redis to the network. The seeded SDK keys above are **sample keys committed in the seed script**. Rotate them if the API is reachable, and do not reuse them as production secrets.
-- Data-plane routes always require `Authorization: Bearer <sdk key>` (or `x-sdk-key`). Rotation marks old keys inactive in Postgres immediately and the new key works on first use. A process that already resolved the old key can still accept it for up to 30 seconds (in-memory cache, per instance, successful lookups only).
-- `JWT_SECRET` is in `.env.example` and Terraform and is **not read by application code**. It does not authenticate requests.
-
-### Try the SDKs
-
-```bash
-# Node (uses the workspace @flagship/sdk)
-node examples/node-demo/index.mjs
-
-# Python
-pip install -e sdks/python
-python examples/python-demo/main.py
-```
-
-### Full stack in Docker
+Everything in Docker, including Prometheus and Grafana:
 
 ```bash
 docker compose --profile full up --build
-# API on :4000, dashboard on :3000
+# API :4000, dashboard :3000, Prometheus :9090, Grafana :3001
 ```
 
-## Testing & load
+## Tradeoff: clients evaluate a fetched copy
 
-```bash
-npm run test --workspace @flagship/sdk     # engine + hashing (stickiness, uniformity)
-npm run test --workspace backend           # experiment statistics
-cd sdks/python && pip install -e ".[dev]" && pytest
+Clients never call the API per flag read; they evaluate the last flag set they
+fetched. Reads are fast and keep working if the API is down, but a toggle shows
+up on the next fetch, not instantly. With a few-second poll that is fine for
+rollouts. A kill switch in production would push the change instead of waiting
+for the poll.
 
-# Latency load test (needs the API running + a valid SDK key)
-k6 run -e SDK_KEY=sdk-production-demo00000000 infra/k6/eval-latency.js
-```
+## Metrics
 
-## Deploy
+`GET /metrics` serves Prometheus counters: `flagship_kills_total` (flags turned
+off), `flagship_dataset_fetches_total` (flag set fetches by clients), and
+`flagship_evaluations_total` (evaluations done by the API for the dashboard's
+test panel; client-side evaluations are local and not counted). The compose
+`full` profile scrapes it with [`infra/prometheus/prometheus.yml`](infra/prometheus/prometheus.yml)
+and provisions one Grafana board ([`infra/grafana/dashboards/flagship.json`](infra/grafana/dashboards/flagship.json)).
 
-CI (`.github/workflows/ci.yml`) builds/tests backend, frontend, and both SDKs.
-`sdk-release.yml` publishes versioned SDK releases on `sdk-v*` tags. `deploy.yml`
-builds the API image and deploys to **Cloud Run**; provision the backing
-infrastructure with **[Terraform](infra/terraform/README.md)**.
+## Deploying
+
+Terraform is only meant for the demo host, and none is checked in yet. See
+[`infra/terraform/README.md`](infra/terraform/README.md) for what I would add.
+
+Before exposing the API, set `ADMIN_API_KEY` (dashboard routes then require
+`x-api-key`), restrict `CORS_ORIGIN`, and rotate the seeded SDK keys, which are
+committed in the seed script.
+
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).

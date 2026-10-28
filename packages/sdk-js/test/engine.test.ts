@@ -17,12 +17,22 @@ function flag(partial: Partial<Flag> & Pick<Flag, "key">): Flag {
   };
 }
 
-function dataset(flags: Flag[], segments: ClientDataset["segments"] = {}): ClientDataset {
+function dataset(flags: Flag[]): ClientDataset {
   return {
     environmentKey: "test",
     version: 1,
     flags: Object.fromEntries(flags.map((f) => [f.key, f])),
-    segments,
+  };
+}
+
+function rollout(percent: number): Flag["fallthrough"] {
+  return {
+    rollout: {
+      variations: [
+        { variation: 0, weight: percent },
+        { variation: 1, weight: 100 - percent },
+      ],
+    },
   };
 }
 
@@ -56,18 +66,12 @@ describe("Engine", () => {
     expect(e.evaluate("f", { key: "other" }, true).value).toBe(false);
   });
 
-  it("matches targeting rules with clauses", () => {
+  it("matches an attribute-equals rule", () => {
     const e = new Engine(
       dataset([
         flag({
           key: "f",
-          rules: [
-            {
-              id: "r1",
-              clauses: [{ attribute: "country", op: "in", values: ["US", "CA"] }],
-              variation: 0,
-            },
-          ],
+          rules: [{ id: "r1", clauses: [{ attribute: "country", op: "in", values: ["US", "CA"] }], variation: 0 }],
           fallthrough: { variation: 1 },
         }),
       ]),
@@ -76,73 +80,45 @@ describe("Engine", () => {
     expect(e.evaluate("f", { key: "u2", country: "FR" }, true).value).toBe(false);
   });
 
-  it("supports negate and comparison operators", () => {
+  it("matches an email-domain rule", () => {
     const e = new Engine(
       dataset([
         flag({
           key: "f",
-          rules: [
-            {
-              id: "r1",
-              clauses: [{ attribute: "age", op: "greaterThanOrEqual", values: [18] }],
-              variation: 0,
-            },
-          ],
+          rules: [{ id: "staff", clauses: [{ attribute: "email", op: "endsWith", values: ["@flagship.dev"] }], variation: 0 }],
           fallthrough: { variation: 1 },
         }),
       ]),
     );
-    expect(e.evaluate("f", { key: "u", age: 21 }, false).value).toBe(true);
-    expect(e.evaluate("f", { key: "u", age: 15 }, true).value).toBe(false);
+    const staff = e.evaluate("f", { key: "u1", email: "ada@flagship.dev" }, false);
+    expect(staff.value).toBe(true);
+    expect(staff.reason).toEqual({ kind: "RULE_MATCH", ruleId: "staff", ruleIndex: 0 });
+    expect(e.evaluate("f", { key: "u2", email: "ada@example.com" }, true).value).toBe(false);
+    expect(e.evaluate("f", { key: "u3" }, true).value).toBe(false);
   });
 
-  it("resolves percentage rollout deterministically", () => {
-    const e = new Engine(
-      dataset([
-        flag({
-          key: "f",
-          variations: ["a", "b"],
-          offVariation: 1,
-          fallthrough: {
-            rollout: {
-              variations: [
-                { variation: 0, weight: 50 },
-                { variation: 1, weight: 50 },
-              ],
-            },
-          },
-        }),
-      ]),
-    );
-    const first = e.evaluate("f", { key: "stable-user" }, "x").value;
-    const second = e.evaluate("f", { key: "stable-user" }, "x").value;
-    expect(first).toBe(second);
-    expect(["a", "b"]).toContain(first);
+  it("serves string variations", () => {
+    const e = new Engine(dataset([flag({ key: "layout", variations: ["a", "b"], fallthrough: { variation: 1 } })]));
+    expect(e.evaluate("layout", { key: "u1" }, "x").value).toBe("b");
   });
 
-  it("evaluates segment matches", () => {
-    const e = new Engine(
-      dataset(
-        [
-          flag({
-            key: "f",
-            rules: [
-              {
-                id: "r1",
-                clauses: [{ attribute: "", op: "segmentMatch", values: ["beta"] }],
-                variation: 0,
-              },
-            ],
-            fallthrough: { variation: 1 },
-          }),
-        ],
-        {
-          beta: { key: "beta", included: ["u1"], excluded: [], rules: [], salt: "s" },
-        },
-      ),
-    );
-    expect(e.evaluate("f", { key: "u1" }, false).value).toBe(true);
-    expect(e.evaluate("f", { key: "u2" }, true).value).toBe(false);
+  it("keeps users included at 10% when the rollout grows to 20%", () => {
+    const at10 = new Engine(dataset([flag({ key: "f", fallthrough: rollout(10) })]));
+    const at20 = new Engine(dataset([flag({ key: "f", fallthrough: rollout(20) })]));
+    let included10 = 0;
+    let included20 = 0;
+    for (let i = 0; i < 5000; i++) {
+      const ctx = { key: `user-${i}` };
+      const before = at10.evaluate("f", ctx, false).value;
+      const after = at20.evaluate("f", ctx, false).value;
+      if (before) {
+        included10++;
+        expect(after).toBe(true);
+      }
+      if (after) included20++;
+    }
+    expect(included10).toBeGreaterThan(0);
+    expect(included20).toBeGreaterThan(included10);
   });
 
   it("fails closed to offVariation when a prerequisite is off", () => {

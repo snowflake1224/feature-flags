@@ -5,12 +5,15 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { DatasetService } from "../dataset/dataset.service";
 import { OwnershipService } from "../common/ownership.service";
+import { MetricsService } from "../metrics/metrics.service";
+
+export type FlagKind = "boolean" | "string";
 
 export interface CreateFlagInput {
   key: string;
   name: string;
   description?: string;
-  kind?: "boolean" | "string" | "number" | "json";
+  kind?: FlagKind;
   variations?: unknown[];
   temporary?: boolean;
   tags?: string[];
@@ -26,6 +29,43 @@ export interface UpdateConfigInput {
   comment?: string;
 }
 
+const CLAUSE_OPS = new Set(["in", "endsWith"]);
+
+export function resolveVariations(kind: FlagKind, variations: unknown[] | undefined): Array<boolean | string> {
+  if (kind === "boolean") {
+    if (variations && !(variations.length === 2 && variations[0] === true && variations[1] === false)) {
+      throw new BadRequestException("boolean flags serve [true, false]");
+    }
+    return [true, false];
+  }
+  if (!variations || variations.length < 2 || !variations.every((v) => typeof v === "string")) {
+    throw new BadRequestException("string flags need at least two string variations");
+  }
+  return variations as string[];
+}
+
+/** Rules may only use `in` (attribute equals a value) or `endsWith` (e.g. email domain). */
+export function assertSimpleRules(rules: unknown): void {
+  if (!Array.isArray(rules)) throw new BadRequestException("rules must be an array");
+  for (const rule of rules) {
+    const clauses = (rule as { clauses?: unknown })?.clauses;
+    if (!Array.isArray(clauses) || clauses.length === 0) {
+      throw new BadRequestException("each rule needs at least one clause");
+    }
+    for (const clause of clauses as Array<Record<string, unknown>>) {
+      if (!CLAUSE_OPS.has(String(clause?.op))) {
+        throw new BadRequestException("clause op must be 'in' or 'endsWith'");
+      }
+      if (typeof clause.attribute !== "string" || !clause.attribute) {
+        throw new BadRequestException("clause needs an attribute");
+      }
+      if (!Array.isArray(clause.values) || !clause.values.every((v) => typeof v === "string")) {
+        throw new BadRequestException("clause values must be strings");
+      }
+    }
+  }
+}
+
 @Injectable()
 export class FlagsService {
   constructor(
@@ -33,14 +73,12 @@ export class FlagsService {
     private audit: AuditService,
     private dataset: DatasetService,
     private ownership: OwnershipService,
+    private metrics: MetricsService,
   ) {}
 
   async create(projectId: string, input: CreateFlagInput, actor: string) {
-    const variations =
-      input.variations ?? (input.kind === "boolean" || !input.kind ? [true, false] : []);
-    if (variations.length < 1) {
-      throw new BadRequestException("a flag needs at least one variation");
-    }
+    const kind = input.kind ?? "boolean";
+    const variations = resolveVariations(kind, input.variations);
 
     const environments = await this.prisma.environment.findMany({ where: { projectId } });
 
@@ -50,7 +88,7 @@ export class FlagsService {
         key: input.key,
         name: input.name,
         description: input.description ?? "",
-        kind: input.kind ?? "boolean",
+        kind,
         variations: variations as Prisma.InputJsonValue,
         temporary: input.temporary ?? true,
         tags: input.tags ?? [],
@@ -112,6 +150,7 @@ export class FlagsService {
     actor: string,
   ) {
     await this.ownership.assertEnvironmentInProject(projectId, environmentId);
+    if (input.rules !== undefined) assertSimpleRules(input.rules);
     const flag = await this.get(projectId, key);
     const existing = flag.configs.find((c) => c.environmentId === environmentId);
     if (!existing) throw new NotFoundException("flag config not found for environment");
@@ -156,13 +195,14 @@ export class FlagsService {
       },
     });
 
+    if (existing.on && !updated.on) this.metrics.inc("kills");
     await this.dataset.refresh(environmentId);
     return updated;
   }
 
   /**
-   * The kill switch. Isolated from updateConfig so it can be a single, fast,
-   * heavily-audited operation. Flips `on` and immediately fans out the change.
+   * The dashboard toggle. Flips `on` and writes an audit row naming who did
+   * it. Clients pick up the change on their next fetch.
    */
   async toggle(
     projectId: string,
@@ -195,6 +235,7 @@ export class FlagsService {
       after: { on: updated.on },
     });
 
+    if (existing.on && !on) this.metrics.inc("kills");
     await this.dataset.refresh(environmentId);
     return updated;
   }

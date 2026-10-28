@@ -1,0 +1,34 @@
+{
+  "uid": "flagship",
+  "title": "Flagship",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Flag set fetches / min",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "rate(flagship_dataset_fetches_total[5m]) * 60" }]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Server-side evaluations / min",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "rate(flagship_evaluations_total[5m]) * 60" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Kill switch flips (last 24h)",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "increase(flagship_kills_total[24h])" }]
+    }
+  ]
+}

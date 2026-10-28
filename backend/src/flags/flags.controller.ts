@@ -15,17 +15,14 @@ import { FlagsService } from "./flags.service";
 import { evaluate, type ClientDataset, type EvalContext } from "@flagship/sdk";
 import { DatasetService } from "../dataset/dataset.service";
 import { OwnershipService } from "../common/ownership.service";
+import { MetricsService } from "../metrics/metrics.service";
 
 class CreateFlagDto {
   @Matches(/^[a-zA-Z0-9-_.]+$/)
   key!: string;
   @IsString() name!: string;
   @IsOptional() @IsString() description?: string;
-  @IsOptional() @IsIn(["boolean", "string", "number", "json"]) kind?:
-    | "boolean"
-    | "string"
-    | "number"
-    | "json";
+  @IsOptional() @IsIn(["boolean", "string"]) kind?: "boolean" | "string";
   @IsOptional() @IsArray() variations?: unknown[];
   @IsOptional() @IsBoolean() temporary?: boolean;
   @IsOptional() @IsArray() tags?: string[];
@@ -43,6 +40,7 @@ export class FlagsController {
     private flags: FlagsService,
     private dataset: DatasetService,
     private ownership: OwnershipService,
+    private metrics: MetricsService,
   ) {}
 
   @Post()
@@ -96,6 +94,7 @@ export class FlagsController {
   ) {
     await this.ownership.assertEnvironmentInProject(projectId, environmentId);
     const ds: ClientDataset = await this.dataset.getDataset(environmentId);
+    this.metrics.inc("evaluations");
     return evaluate(ds, key, context ?? { key: "anonymous" }, null);
   }
 

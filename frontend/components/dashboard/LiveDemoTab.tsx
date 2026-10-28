@@ -4,10 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { describeReason } from "@/lib/format";
 import { evaluateLocal } from "@/lib/local-eval";
-import type { ClientDataset, EvalContext, EvalResult, Experiment, HealthReport } from "@/lib/types";
-import { Alert, Badge, Button, Card, ConfirmDialog, EmptyState, Field, Input, Select, StatusDot, Textarea } from "@/components/ui";
+import type { ClientDataset, EvalContext, EvalResult, HealthReport } from "@/lib/types";
+import { Alert, Badge, Button, Card, ConfirmDialog, EmptyState, Field, StatusDot, Textarea } from "@/components/ui";
 
-type Connection = "idle" | "connecting" | "live" | "reconnecting" | "error";
+const POLL_MS = 3000;
+
+type PollState = "idle" | "polling" | "error";
 
 interface LogEntry {
   id: number;
@@ -17,9 +19,8 @@ interface LogEntry {
 }
 
 const DEFAULT_CONTEXT = `{
-  "key": "user-beta-1",
-  "country": "DE",
-  "email": "beta@flagship.dev"
+  "key": "user-1",
+  "email": "ada@flagship.dev"
 }`;
 
 export default function LiveDemoTab({
@@ -28,7 +29,6 @@ export default function LiveDemoTab({
   envName,
   sdkKey,
   production,
-  projectKey,
   onOpenTab,
 }: {
   projectId: string;
@@ -36,41 +36,25 @@ export default function LiveDemoTab({
   envName: string;
   sdkKey: string | null;
   production: boolean;
-  projectKey: string;
-  onOpenTab: (tab: "Flags" | "Experiments" | "Audit log" | "Settings") => void;
+  onOpenTab: (tab: "Flags" | "Audit log" | "Settings") => void;
 }) {
-  const [connection, setConnection] = useState<Connection>(sdkKey ? "connecting" : "idle");
-  const [streamError, setStreamError] = useState<string | null>(null);
+  const [pollState, setPollState] = useState<PollState>(sdkKey ? "polling" : "idle");
+  const [pollError, setPollError] = useState<string | null>(null);
   const [dataset, setDataset] = useState<ClientDataset | null>(null);
-  const [version, setVersion] = useState<number | null>(null);
-  const [latencyMs, setLatencyMs] = useState<number | null>(null);
+  const [lastFetchAt, setLastFetchAt] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [contextText, setContextText] = useState(DEFAULT_CONTEXT);
   const [serverByFlag, setServerByFlag] = useState<Record<string, EvalResult>>({});
   const [compareError, setCompareError] = useState<string | null>(null);
   const [pendingToggle, setPendingToggle] = useState<string | null>(null);
   const [toggleError, setToggleError] = useState<string | null>(null);
+  const [togglePending, setTogglePending] = useState<{ flagKey: string; on: boolean; at: number } | null>(null);
   const [health, setHealth] = useState<HealthReport | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
-  const [eventKey, setEventKey] = useState(projectKey === "demo" ? "pricing_viewed" : "exposure");
-  const [goalKey, setGoalKey] = useState(projectKey === "demo" ? "subscribed" : "conversion");
-  const [eventFlag, setEventFlag] = useState(projectKey === "demo" ? "pricing-experiment" : "");
-  const [eventValue, setEventValue] = useState("");
-  const [eventMessage, setEventMessage] = useState<string | null>(null);
-  const [eventError, setEventError] = useState<string | null>(null);
-  const [experiments, setExperiments] = useState<Experiment[]>([]);
-  const [experimentKey, setExperimentKey] = useState(projectKey === "demo" ? "pricing-ab" : "");
-  const [resultsNote, setResultsNote] = useState<string | null>(null);
-  const [steps, setSteps] = useState({
-    connect: false,
-    propagate: false,
-    evaluate: false,
-    event: false,
-    results: false,
-    audit: false,
-  });
+  const [steps, setSteps] = useState({ fetch: false, propagate: false, evaluate: false, audit: false });
   const logId = useRef(0);
   const versionRef = useRef<number | null>(null);
+  const toggleRef = useRef<{ flagKey: string; on: boolean; at: number } | null>(null);
 
   function pushLog(kind: string, detail: string) {
     const entry = { id: ++logId.current, at: new Date().toLocaleTimeString(), kind, detail };
@@ -78,104 +62,56 @@ export default function LiveDemoTab({
   }
 
   useEffect(() => {
-    versionRef.current = version;
-  }, [version]);
-
-  useEffect(() => {
     if (!sdkKey) {
-      setConnection("idle");
+      setPollState("idle");
       setDataset(null);
       return;
     }
     let cancelled = false;
-    let attempt = 0;
-    let controller: AbortController | null = null;
     let timer: number | undefined;
     const key = sdkKey;
+    versionRef.current = null;
 
-    async function handleEvent(eventName: string, data: string) {
-      if (eventName === "put") {
-        try {
-          const next = JSON.parse(data) as ClientDataset;
-          setDataset(next);
-          setVersion(next.version);
-          versionRef.current = next.version;
-          pushLog("put", `dataset v${next.version} · ${Object.keys(next.flags).length} flags`);
-        } catch {
-          pushLog("put", "unreadable dataset payload");
-        }
-        return;
-      }
-      if (eventName === "patch") {
-        let announced: number | undefined;
-        try {
-          announced = (JSON.parse(data) as { version?: number }).version;
-        } catch {
-          announced = undefined;
-        }
-        const started = performance.now();
-        pushLog("patch", announced !== undefined ? `version ${announced}` : "change notice");
-        try {
-          const fresh = await api.getSdkDataset(key);
-          if (cancelled) return;
-          const elapsed = Math.round(performance.now() - started);
-          setLatencyMs(elapsed);
-          setDataset(fresh);
-          setVersion(fresh.version);
-          if (versionRef.current !== null && fresh.version !== versionRef.current) {
-            setSteps((current) => ({ ...current, propagate: true }));
-          }
-          versionRef.current = fresh.version;
-          pushLog("refresh", `v${fresh.version} in ${elapsed} ms`);
-        } catch (error) {
-          if (!cancelled) pushLog("refresh", error instanceof Error ? error.message : "dataset refresh failed");
-        }
-      }
-    }
-
-    async function connect() {
-      controller = new AbortController();
-      setConnection(attempt === 0 ? "connecting" : "reconnecting");
-      setStreamError(null);
+    async function poll() {
       try {
-        await api.streamSdk(key, {
-          signal: controller.signal,
-          onOpen: () => {
-            if (cancelled) return;
-            setConnection("live");
-            setSteps((current) => ({ ...current, connect: true }));
-          },
-          onEvent: (message) => {
-            void handleEvent(message.event, message.data);
-          },
-        });
-        if (!cancelled) schedule();
+        const next = await api.getSdkDataset(key);
+        if (cancelled) return;
+        setPollState("polling");
+        setPollError(null);
+        setDataset(next);
+        setLastFetchAt(new Date().toLocaleTimeString());
+        setSteps((current) => ({ ...current, fetch: true }));
+        const pending = toggleRef.current;
+        const pendingFlag = pending ? next.flags[pending.flagKey] : undefined;
+        if (versionRef.current === null) {
+          pushLog("fetch", `v${next.version} · ${Object.keys(next.flags).length} flags`);
+        } else if (pending && pendingFlag && pendingFlag.on === pending.on) {
+          const seconds = ((Date.now() - pending.at) / 1000).toFixed(1);
+          pushLog("change", `${pending.flagKey} is ${pendingFlag.on ? "on" : "off"} in v${next.version}, ${seconds}s after the toggle`);
+          toggleRef.current = null;
+          setTogglePending(null);
+          setSteps((current) => ({ ...current, propagate: true }));
+        } else if (next.version !== versionRef.current) {
+          pushLog("change", `v${versionRef.current} → v${next.version}`);
+        }
+        versionRef.current = next.version;
       } catch (error) {
-        if (cancelled || (error instanceof DOMException && error.name === "AbortError")) return;
-        const message = error instanceof Error ? error.message : "Stream failed";
-        setStreamError(message);
-        setConnection("error");
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : "Fetch failed";
+        setPollState("error");
+        setPollError(message);
         pushLog("error", message);
-        schedule();
+      } finally {
+        if (!cancelled) timer = window.setTimeout(() => void poll(), POLL_MS);
       }
     }
 
-    function schedule() {
-      const delay = Math.min(10000, 1000 * 2 ** attempt);
-      attempt += 1;
-      setConnection("reconnecting");
-      timer = window.setTimeout(() => {
-        if (!cancelled) void connect();
-      }, delay);
-    }
-
-    void connect();
+    void poll();
     return () => {
       cancelled = true;
-      controller?.abort();
       if (timer) window.clearTimeout(timer);
     };
-    // pushLog closes over setters only; reconnect when the key changes.
+    // pushLog closes over setters only; restart polling when the key changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sdkKey]);
 
@@ -199,16 +135,6 @@ export default function LiveDemoTab({
       window.clearInterval(timer);
     };
   }, []);
-
-  useEffect(() => {
-    api
-      .listExperiments(projectId, envId)
-      .then((next) => {
-        setExperiments(next);
-        setExperimentKey((current) => current || next[0]?.key || "");
-      })
-      .catch(() => setExperiments([]));
-  }, [projectId, envId]);
 
   const parsedContext = useMemo((): { ok: true; value: EvalContext } | { ok: false; error: string } => {
     try {
@@ -250,81 +176,39 @@ export default function LiveDemoTab({
     setToggleError(null);
     try {
       await api.toggleFlag(projectId, flagKey, envId, on, on ? "enabled from live demo" : "kill switch from live demo");
-      setPendingToggle(null);
+      const pending = { flagKey, on, at: Date.now() };
+      toggleRef.current = pending;
+      setTogglePending(pending);
+      pushLog("toggle", `${flagKey} → ${on ? "on" : "off"} saved; waiting for the next fetch`);
     } catch (error) {
       setToggleError(error instanceof Error ? error.message : "Toggle failed");
+    } finally {
       setPendingToggle(null);
     }
   }
 
-  async function sendEvent(name: string) {
-    if (!sdkKey) return;
-    if (!parsedContext.ok) {
-      setEventError(parsedContext.error);
-      return;
-    }
-    setEventError(null);
-    setEventMessage(null);
-    const value = eventValue.trim() === "" ? undefined : Number(eventValue);
-    if (eventValue.trim() !== "" && Number.isNaN(value)) {
-      setEventError("Value must be a number.");
-      return;
-    }
-    try {
-      await api.ingestSdkEvent(sdkKey, {
-        eventKey: name,
-        contextKey: parsedContext.value.key,
-        context: parsedContext.value,
-        flagKey: eventFlag.trim() || undefined,
-        value,
-        ts: Date.now(),
-      });
-      setEventMessage(`Sent ${name} for ${parsedContext.value.key}.`);
-      setSteps((current) => ({ ...current, event: true }));
-    } catch (error) {
-      setEventError(error instanceof Error ? error.message : "Event ingestion is unavailable.");
-    }
-  }
-
-  async function refreshResults() {
-    if (!experimentKey) {
-      setResultsNote("Create an experiment first.");
-      return;
-    }
-    try {
-      const results = await api.experimentResults(projectId, envId, experimentKey);
-      const summary = results.variations
-        .map((variation) => `v${variation.variationIndex} ${variation.conversions}/${variation.exposures}`)
-        .join(" · ");
-      setResultsNote(`${results.totalExposures} exposures${summary ? ` · ${summary}` : ""}`);
-      setSteps((current) => ({ ...current, results: true }));
-    } catch (error) {
-      setResultsNote(error instanceof Error ? error.message : "Results are unavailable.");
-    }
-  }
-
-  const tone = connection === "live" ? "ok" : connection === "error" ? "down" : connection === "idle" ? "idle" : "warn";
+  const tone = pollState === "polling" ? "ok" : pollState === "error" ? "down" : "idle";
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold">Data plane · {envName}</h2>
+          <h2 className="text-sm font-semibold">SDK view · {envName}</h2>
           <p className="text-sm text-muted-foreground">
-            The browser holds an authenticated fetch stream. Native EventSource cannot send the SDK bearer token.
+            This tab behaves like an SDK client: it fetches the flag set every {POLL_MS / 1000} seconds and evaluates the copy it holds.
           </p>
         </div>
         <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs">
           <StatusDot tone={tone} />
-          {connection}
-          {version !== null && <span>v{version}</span>}
-          {latencyMs !== null && <span>{latencyMs} ms refresh</span>}
+          {pollState}
+          {dataset && <span>v{dataset.version}</span>}
+          {lastFetchAt && <span>fetched {lastFetchAt}</span>}
         </span>
       </div>
 
       {!sdkKey && (
         <Alert tone="warning" title="No active SDK key">
-          Issue one from Settings, then come back. The stream authenticates with that environment key.
+          Issue one from Settings, then come back. Fetches authenticate with that environment key.
           <div className="mt-2">
             <Button size="sm" variant="outline" onClick={() => onOpenTab("Settings")}>
               Open settings
@@ -332,17 +216,17 @@ export default function LiveDemoTab({
           </div>
         </Alert>
       )}
-      {streamError && <Alert tone="danger">{streamError} The stream will retry.</Alert>}
+      {pollError && <Alert tone="danger">{pollError} Retrying on the next poll.</Alert>}
       {toggleError && <Alert tone="danger">{toggleError}</Alert>}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold">Stream</h3>
-            <Badge color={connection === "live" ? "green" : "gray"}>{dataset?.environmentKey ?? envName}</Badge>
+            <h3 className="text-sm font-semibold">Fetches</h3>
+            <Badge color={pollState === "polling" ? "green" : "gray"}>{dataset?.environmentKey ?? envName}</Badge>
           </div>
           {logs.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Waiting for the first put…</p>
+            <p className="text-sm text-muted-foreground">Waiting for the first fetch…</p>
           ) : (
             <ul className="space-y-1 text-xs">
               {logs.map((entry) => (
@@ -355,20 +239,21 @@ export default function LiveDemoTab({
             </ul>
           )}
           <div className="space-y-2">
-            <h4 className="text-xs font-medium text-muted-foreground">Kill switch from this stream</h4>
-            {localResults.length === 0 && <p className="text-xs text-muted-foreground">Flags appear after the dataset arrives.</p>}
+            <h4 className="text-xs font-medium text-muted-foreground">Kill switch</h4>
+            {localResults.length === 0 && <p className="text-xs text-muted-foreground">Flags appear after the first fetch.</p>}
             {localResults.map((item) => (
               <div key={item.key} className="flex items-center justify-between gap-2 text-sm">
                 <code>{item.key}</code>
                 <Button
                   size="sm"
                   variant={item.on ? "danger" : "secondary"}
+                  disabled={togglePending?.flagKey === item.key}
                   onClick={() => {
                     if (production) setPendingToggle(item.key);
                     else void toggle(item.key, !item.on);
                   }}
                 >
-                  {item.on ? "Turn off" : "Turn on"}
+                  {togglePending?.flagKey === item.key ? "Waiting for fetch…" : item.on ? "Turn off" : "Turn on"}
                 </Button>
               </div>
             ))}
@@ -377,7 +262,7 @@ export default function LiveDemoTab({
 
         <Card className="space-y-3">
           <h3 className="text-sm font-semibold">Evaluate</h3>
-          <Field label="Context" htmlFor="live-context" hint="Sent as contextKey and as context, so attribute targeting still works when the API accepts it.">
+          <Field label="Context" htmlFor="live-context" hint="Evaluated in the browser against the fetched copy.">
             <Textarea
               id="live-context"
               rows={5}
@@ -389,7 +274,7 @@ export default function LiveDemoTab({
           {!parsedContext.ok && <Alert tone="warning">{parsedContext.error}</Alert>}
           {compareError && <Alert tone="danger">{compareError}</Alert>}
           {localResults.length === 0 ? (
-            <EmptyState title="No dataset yet">Connect the stream to evaluate flags locally in the browser.</EmptyState>
+            <EmptyState title="No flag set yet">Flags are evaluated locally once the first fetch completes.</EmptyState>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
@@ -418,7 +303,7 @@ export default function LiveDemoTab({
                             <div className={mismatch ? "text-amber-800" : undefined}>
                               <div className="font-mono">{JSON.stringify(server.value)}</div>
                               <div>{server.reason.kind}</div>
-                              {mismatch && <div>Local and server differ.</div>}
+                              {mismatch && <div>Local and server differ (the local copy may be one fetch behind).</div>}
                             </div>
                           ) : (
                             <Button size="sm" variant="outline" onClick={() => void compare(item.key)}>
@@ -459,82 +344,33 @@ export default function LiveDemoTab({
           )}
         </Card>
 
-        <Card className="space-y-3 lg:col-span-2">
-          <h3 className="text-sm font-semibold">Event simulator</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Flag key" htmlFor="event-flag">
-              <Input id="event-flag" value={eventFlag} onChange={(event) => setEventFlag(event.target.value)} />
-            </Field>
-            <Field label="Numeric value" htmlFor="event-value" hint="Optional. Used by numeric metrics.">
-              <Input id="event-value" value={eventValue} onChange={(event) => setEventValue(event.target.value)} />
-            </Field>
-            <Field label="Exposure event" htmlFor="event-exposure">
-              <Input id="event-exposure" value={eventKey} onChange={(event) => setEventKey(event.target.value)} />
-            </Field>
-            <Field label="Goal event" htmlFor="event-goal">
-              <Input id="event-goal" value={goalKey} onChange={(event) => setGoalKey(event.target.value)} />
-            </Field>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" disabled={!sdkKey} onClick={() => void sendEvent(eventKey)}>
-              Send exposure
-            </Button>
-            <Button size="sm" variant="secondary" disabled={!sdkKey} onClick={() => void sendEvent(goalKey)}>
-              Send goal
+        <Card className="lg:col-span-2">
+          <h3 className="text-sm font-semibold">Guided checklist</h3>
+          <ol className="mt-3 space-y-2 text-sm">
+            <Check done={steps.fetch} label="Fetched the environment flag set with the SDK key." />
+            <Check done={steps.propagate} label="A toggle showed up on the next fetch." />
+            <Check done={steps.evaluate} label="A server evaluation is shown next to the local result." />
+            <Check done={steps.audit} label="The audit log shows who flipped the flag." />
+          </ol>
+          <div className="mt-3">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSteps((current) => ({ ...current, audit: true }));
+                onOpenTab("Audit log");
+              }}
+            >
+              Inspect audit
             </Button>
           </div>
-          {eventMessage && <Alert tone="success">{eventMessage}</Alert>}
-          {eventError && <Alert tone="danger">{eventError}</Alert>}
-          <div className="flex flex-wrap items-end gap-2">
-            <Field label="Experiment" htmlFor="live-experiment" className="min-w-[180px] flex-1">
-              <Select id="live-experiment" value={experimentKey} onChange={(event) => setExperimentKey(event.target.value)}>
-                {experiments.length === 0 && <option value="">No experiments</option>}
-                {experiments.map((experiment) => (
-                  <option key={experiment.id} value={experiment.key}>
-                    {experiment.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-            <Button size="sm" variant="outline" onClick={() => void refreshResults()}>
-              Refresh results
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => onOpenTab("Experiments")}>
-              Open experiments
-            </Button>
-          </div>
-          {resultsNote && <p className="text-xs text-muted-foreground">{resultsNote}</p>}
         </Card>
       </div>
-
-      <Card>
-        <h3 className="text-sm font-semibold">Guided checklist</h3>
-        <ol className="mt-3 space-y-2 text-sm">
-          <Check done={steps.connect} label="Stream connected and received the environment dataset." />
-          <Check done={steps.propagate} label="A flag change produced a patch and a dataset refresh." />
-          <Check done={steps.evaluate} label="A server evaluation reason is shown next to the local result." />
-          <Check done={steps.event} label="An exposure or conversion event was accepted." />
-          <Check done={steps.results} label="Experiment results were refreshed from this screen." />
-          <Check done={steps.audit} label="The audit trail was opened." />
-        </ol>
-        <div className="mt-3">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setSteps((current) => ({ ...current, audit: true }));
-              onOpenTab("Audit log");
-            }}
-          >
-            Inspect audit
-          </Button>
-        </div>
-      </Card>
 
       <ConfirmDialog
         open={!!pendingToggle}
         title={pendingToggle ? `Change ${pendingToggle} in production?` : "Confirm"}
-        description="The kill switch publishes a patch on this stream."
+        description="Clients see the change on their next fetch. The audit log records who flipped it."
         confirmLabel="Apply in production"
         danger
         onConfirm={() => {

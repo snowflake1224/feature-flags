@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { describeReason } from "@/lib/format";
 import { asArray, validateTargetingRules } from "@/lib/targeting";
-import type { EvalResult, Flag, FlagValue, Prerequisite, Segment, Target, TargetingRule, VariationOrRollout } from "@/lib/types";
+import type { EvalResult, Flag, FlagValue, Prerequisite, Target, TargetingRule, VariationOrRollout } from "@/lib/types";
 import {
   Alert,
   Badge,
@@ -46,13 +46,12 @@ export default function FlagDrawer({
   const [targets, setTargets] = useState<Target[]>([]);
   const [prerequisites, setPrerequisites] = useState<Prerequisite[]>([]);
   const [comment, setComment] = useState("edited targeting from dashboard");
-  const [segments, setSegments] = useState<Segment[]>([]);
   const [siblingFlags, setSiblingFlags] = useState<Flag[]>([]);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [confirmSave, setConfirmSave] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [ctxText, setCtxText] = useState('{\n  "key": "user-beta-1",\n  "country": "DE",\n  "email": "beta@flagship.dev"\n}');
+  const [ctxText, setCtxText] = useState('{\n  "key": "user-1",\n  "email": "ada@flagship.dev"\n}');
   const [evalResult, setEvalResult] = useState<EvalResult | null>(null);
 
   useEffect(() => {
@@ -89,7 +88,6 @@ export default function FlagDrawer({
       .catch((error: Error) => {
         if (!cancelled) setLoadError(error.message);
       });
-    api.listSegments(projectId, envId).then(setSegments).catch(() => setSegments([]));
     api.listFlags(projectId).then(setSiblingFlags).catch(() => setSiblingFlags([]));
     return () => {
       cancelled = true;
@@ -197,7 +195,7 @@ export default function FlagDrawer({
           <div className="space-y-6">
             {production && (
               <Alert tone="warning" title="Production environment">
-                Saving publishes a new dataset version to connected SDK clients.
+                Saving publishes a new flag set. SDK clients pick it up on their next fetch.
               </Alert>
             )}
 
@@ -300,7 +298,6 @@ export default function FlagDrawer({
               rules={rules}
               onChange={setRules}
               variations={variations}
-              segments={segments.map((segment) => ({ key: segment.key, name: segment.name }))}
               onValidity={setRulesError}
             />
 
@@ -418,7 +415,7 @@ export default function FlagDrawer({
                 }}
                 disabled={saving || !!rulesError}
               >
-                {saving ? "Saving…" : "Save & propagate"}
+                {saving ? "Saving…" : "Save"}
               </Button>
               <Button variant="outline" onClick={onClose}>
                 Cancel
@@ -432,7 +429,7 @@ export default function FlagDrawer({
               <h3 className="mb-2 text-sm font-semibold">Test targeting</h3>
               {flag.key === "new-checkout" && (
                 <p className="mb-2 text-xs text-muted-foreground">
-                  Try <code>user-beta-1</code> (beta segment) and a random key such as <code>user-99</code> to see rule versus rollout.
+                  Try an <code>@flagship.dev</code> email (rule match), then remove the email and change the key to see the 20% rollout.
                 </p>
               )}
               <Textarea rows={5} value={ctxText} onChange={(event) => setCtxText(event.target.value)} className="font-mono" aria-label="Evaluation context JSON" />
@@ -477,7 +474,7 @@ export default function FlagDrawer({
       <ConfirmDialog
         open={confirmSave}
         title={`Save ${flagKey} in production?`}
-        description="Connected SDK clients will receive a new dataset version within milliseconds."
+        description="SDK clients pick up the new flag set on their next fetch (every few seconds)."
         confirmLabel="Save in production"
         busy={saving}
         onConfirm={() => void save()}

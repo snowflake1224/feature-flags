@@ -1,24 +1,9 @@
-import type { Clause, ClauseOp, SegmentRule, TargetingRule } from "./types";
+import type { Clause, ClauseOp, TargetingRule } from "./types";
 
-export const COMMON_OPS: { value: ClauseOp; label: string; numeric?: boolean }[] = [
-  { value: "in", label: "is one of" },
-  { value: "notIn", label: "is not one of" },
-  { value: "contains", label: "contains" },
-  { value: "startsWith", label: "starts with" },
+export const CLAUSE_OPS: { value: ClauseOp; label: string }[] = [
+  { value: "in", label: "equals" },
   { value: "endsWith", label: "ends with" },
-  { value: "greaterThan", label: "greater than", numeric: true },
-  { value: "greaterThanOrEqual", label: "at least", numeric: true },
-  { value: "lessThan", label: "less than", numeric: true },
-  { value: "lessThanOrEqual", label: "at most", numeric: true },
-  { value: "segmentMatch", label: "is in segment" },
 ];
-
-const NUMERIC = new Set<ClauseOp>([
-  "greaterThan",
-  "greaterThanOrEqual",
-  "lessThan",
-  "lessThanOrEqual",
-]);
 
 export function newRuleId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -27,33 +12,23 @@ export function newRuleId(): string {
   return `rule-${Date.now().toString(36)}`;
 }
 
-export function parseValueList(raw: string, op: ClauseOp): Array<string | number | boolean> {
+export function parseValueList(raw: string): string[] {
   return raw
     .split(",")
     .map((part) => part.trim())
-    .filter(Boolean)
-    .map((part) => {
-      if (part === "true") return true;
-      if (part === "false") return false;
-      if (NUMERIC.has(op) && part !== "" && !Number.isNaN(Number(part))) return Number(part);
-      return part;
-    });
+    .filter(Boolean);
 }
 
-export function formatValueList(values: Array<string | number | boolean> | undefined): string {
-  return (values ?? []).map(String).join(", ");
+export function formatValueList(values: string[] | undefined): string {
+  return (values ?? []).join(", ");
 }
 
 export function emptyClause(): Clause {
-  return { attribute: "country", op: "in", values: ["US"] };
+  return { attribute: "email", op: "endsWith", values: ["@example.com"] };
 }
 
 export function emptyRule(): TargetingRule {
   return { id: newRuleId(), description: "", clauses: [emptyClause()], variation: 0 };
-}
-
-export function emptySegmentRule(): SegmentRule {
-  return { clauses: [emptyClause()] };
 }
 
 export function validateClauses(clauses: unknown, label: string): string | null {
@@ -63,10 +38,8 @@ export function validateClauses(clauses: unknown, label: string): string | null 
   for (const clause of clauses) {
     if (!clause || typeof clause !== "object") return `${label} has a clause that is not an object.`;
     const c = clause as Clause;
-    if (!c.op) return `${label} has a clause without an operator.`;
-    if (c.op !== "segmentMatch" && !c.attribute) {
-      return `${label} has a clause without an attribute.`;
-    }
+    if (c.op !== "in" && c.op !== "endsWith") return `${label} must use "equals" or "ends with".`;
+    if (!c.attribute) return `${label} has a clause without an attribute.`;
     if (!Array.isArray(c.values) || c.values.length === 0) {
       return `${label} has a clause without values.`;
     }
@@ -75,7 +48,7 @@ export function validateClauses(clauses: unknown, label: string): string | null 
 }
 
 export function validateTargetingRules(rules: unknown): string | null {
-  if (!Array.isArray(rules)) return "Rules must be a JSON array.";
+  if (!Array.isArray(rules)) return "Rules must be a list.";
   for (const [index, rule] of rules.entries()) {
     if (!rule || typeof rule !== "object") return `Rule ${index + 1} must be an object.`;
     const r = rule as TargetingRule;
@@ -89,27 +62,6 @@ export function validateTargetingRules(rules: unknown): string | null {
     }
   }
   return null;
-}
-
-export function validateSegmentRules(rules: unknown): string | null {
-  if (!Array.isArray(rules)) return "Rules must be a JSON array.";
-  for (const [index, rule] of rules.entries()) {
-    if (!rule || typeof rule !== "object") return `Rule ${index + 1} must be an object.`;
-    const r = rule as SegmentRule;
-    const clauseError = validateClauses(r.clauses, `Rule ${index + 1}`);
-    if (clauseError) return clauseError;
-    if (r.weight !== undefined && (typeof r.weight !== "number" || r.weight < 0 || r.weight > 100)) {
-      return `Rule ${index + 1} weight must be between 0 and 100.`;
-    }
-  }
-  return null;
-}
-
-export function parseContextList(text: string): string[] {
-  return text
-    .split(/[\n,]/)
-    .map((part) => part.trim())
-    .filter(Boolean);
 }
 
 export function slugKey(name: string, lowercase = false): string {

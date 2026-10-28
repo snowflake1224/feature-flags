@@ -1,31 +1,15 @@
-/** Pragmatic control-plane and data-plane shapes used by the dashboard. */
+/** Pragmatic flag-config and SDK shapes used by the dashboard. */
 
-export type FlagKind = "boolean" | "string" | "number" | "json";
-export type FlagValue = boolean | string | number | Record<string, unknown> | unknown[] | null;
+export type FlagKind = "boolean" | "string";
+export type FlagValue = boolean | string | null;
 
-export type ClauseOp =
-  | "in"
-  | "notIn"
-  | "contains"
-  | "startsWith"
-  | "endsWith"
-  | "matchesRegex"
-  | "greaterThan"
-  | "greaterThanOrEqual"
-  | "lessThan"
-  | "lessThanOrEqual"
-  | "semverEqual"
-  | "semverGreaterThan"
-  | "semverLessThan"
-  | "before"
-  | "after"
-  | "segmentMatch";
+/** `in`: attribute equals one of the values. `endsWith`: e.g. an email domain. */
+export type ClauseOp = "in" | "endsWith";
 
 export interface Clause {
   attribute: string;
   op: ClauseOp;
-  values: Array<string | number | boolean>;
-  negate?: boolean;
+  values: string[];
 }
 
 export interface WeightedVariation {
@@ -36,7 +20,6 @@ export interface WeightedVariation {
 export interface Rollout {
   variations: WeightedVariation[];
   bucketBy?: string;
-  seed?: number;
 }
 
 export interface VariationOrRollout {
@@ -58,12 +41,6 @@ export interface Target {
 export interface Prerequisite {
   flagKey: string;
   variation: number;
-}
-
-export interface SegmentRule {
-  clauses: Clause[];
-  weight?: number;
-  bucketBy?: string;
 }
 
 export interface SdkKey {
@@ -136,68 +113,6 @@ export interface UpdateConfigInput {
   comment?: string;
 }
 
-export interface Segment {
-  id: string;
-  key: string;
-  name: string;
-  description?: string;
-  included: string[];
-  excluded: string[];
-  rules: SegmentRule[];
-  salt?: string;
-}
-
-export interface SegmentInput {
-  key: string;
-  name: string;
-  description?: string;
-  included?: string[];
-  excluded?: string[];
-  rules?: SegmentRule[];
-}
-
-export interface Experiment {
-  id: string;
-  key: string;
-  name: string;
-  flagKey: string;
-  exposureEvent: string;
-  goalEvent: string;
-  metricKind: "binary" | "numeric" | string;
-  environmentId?: string;
-  createdAt?: string;
-}
-
-export interface CreateExperimentInput {
-  key: string;
-  name: string;
-  flagKey: string;
-  exposureEvent: string;
-  goalEvent: string;
-  metricKind?: "binary" | "numeric";
-}
-
-export interface ExperimentVariationResult {
-  variationIndex: number;
-  value: unknown;
-  isControl: boolean;
-  exposures: number;
-  conversions: number;
-  conversionRate: number;
-  avgValue: number;
-  totalValue: number;
-  z: number;
-  pValue: number;
-  relativeUplift: number;
-  significant: boolean;
-}
-
-export interface ExperimentResults {
-  experiment: Experiment;
-  totalExposures: number;
-  variations: ExperimentVariationResult[];
-}
-
 export interface AuditEntry {
   id: string;
   action: string;
@@ -231,19 +146,10 @@ export interface DatasetFlag {
   version: number;
 }
 
-export interface DatasetSegment {
-  key: string;
-  included: string[];
-  excluded: string[];
-  rules: SegmentRule[];
-  salt: string;
-}
-
 export interface ClientDataset {
   environmentKey: string;
   version: number;
   flags: Record<string, DatasetFlag>;
-  segments: Record<string, DatasetSegment>;
 }
 
 export interface EvalContext {
@@ -264,8 +170,7 @@ export interface EvalReason {
   ruleId?: string;
   ruleIndex?: number;
   prerequisiteKey?: string;
-  errorKind?: "FLAG_NOT_FOUND" | "MALFORMED_FLAG" | "WRONG_TYPE";
-  inExperiment?: boolean;
+  errorKind?: "FLAG_NOT_FOUND" | "MALFORMED_FLAG";
 }
 
 export interface EvalResult {
@@ -273,20 +178,4 @@ export interface EvalResult {
   variationIndex: number | null;
   reason: EvalReason;
   flagVersion?: number;
-}
-
-/** Metric event. `context` is accepted alongside `contextKey` when the API supports it. */
-export interface SdkEventInput {
-  eventKey: string;
-  contextKey: string;
-  context?: EvalContext;
-  flagKey?: string;
-  value?: number;
-  metadata?: Record<string, unknown>;
-  ts?: number;
-}
-
-export interface StreamMessage {
-  event: string;
-  data: string;
 }

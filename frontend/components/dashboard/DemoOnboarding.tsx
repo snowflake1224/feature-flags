@@ -12,7 +12,7 @@ export default function DemoOnboarding({
 }: {
   projectId: string;
   projectKey: string;
-  onOpenTab: (tab: "Flags" | "Live demo" | "Experiments" | "Audit log" | "Settings") => void;
+  onOpenTab: (tab: "Flags" | "Live demo" | "Audit log" | "Settings") => void;
 }) {
   const storageKey = `${DISMISS_PREFIX}${projectId}`;
   const [open, setOpen] = useState(projectKey === "demo");
@@ -39,8 +39,8 @@ export default function DemoOnboarding({
           <h2 className="text-sm font-semibold">{demo ? "Five-minute demo" : "How this console fits together"}</h2>
           <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
             {demo
-              ? "Start in production. Toggle new-checkout, watch the dataset version move, then send a pricing event and read the audit trail."
-              : "Create a flag, turn it on, then open Live demo to see the environment dataset update."}
+              ? "Start in production. Open Live demo, turn new-checkout off, watch the next fetch pick it up, then read who flipped it in the audit log."
+              : "Create a flag, turn it on, then open Live demo to see the next fetch pick it up."}
           </p>
         </div>
         <button
@@ -55,14 +55,12 @@ export default function DemoOnboarding({
         </button>
       </div>
       <ol className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
-        <li>1. Flags: toggle <code>new-checkout</code> or any flag. Production asks you to confirm.</li>
-        <li>2. Live demo: connection, version, patch latency, and local versus server evaluation.</li>
+        <li>1. Flags: <code>new-checkout</code> is a 20% sticky rollout plus one rule. Production asks you to confirm.</li>
+        <li>2. Live demo: polls the flag set every 3 seconds and evaluates it in the browser.</li>
         <li>
-          3. Contexts to try: <code>user-beta-1</code> (beta segment) and <code>user-99</code> (rollout).
+          3. Contexts to try: an email ending in <code>@flagship.dev</code> (rule match), or any other key (rollout).
         </li>
-        <li>
-          4. Experiments: <code>pricing-ab</code> uses <code>pricing_viewed</code> and <code>subscribed</code>.
-        </li>
+        <li>4. Audit log: every toggle records who flipped it.</li>
       </ol>
       <div className="mt-3 flex flex-wrap gap-2">
         <Button size="sm" variant="secondary" onClick={() => onOpenTab("Flags")}>
@@ -70,9 +68,6 @@ export default function DemoOnboarding({
         </Button>
         <Button size="sm" variant="secondary" onClick={() => onOpenTab("Live demo")}>
           Live demo
-        </Button>
-        <Button size="sm" variant="secondary" onClick={() => onOpenTab("Experiments")}>
-          Experiments
         </Button>
         <Button size="sm" variant="outline" onClick={() => onOpenTab("Audit log")}>
           Audit
@@ -85,8 +80,6 @@ export default function DemoOnboarding({
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <code className="rounded bg-background px-2 py-1">node examples/node-demo/index.mjs</code>
           <CopyButton value="node examples/node-demo/index.mjs" label="Copy Node" />
-          <code className="rounded bg-background px-2 py-1">python examples/python-demo/main.py</code>
-          <CopyButton value="python examples/python-demo/main.py" label="Copy Python" />
         </div>
       )}
     </section>
