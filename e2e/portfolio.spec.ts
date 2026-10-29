@@ -51,8 +51,9 @@ test("seeded demo project: toggle shows up on the next fetch and is audited", as
   await expect(page.getByLabel("Admin API key")).toBeVisible();
   await expect(page.getByRole("button", { name: "Save identity" })).toBeVisible();
 
-  await page.getByRole("button", { name: "development" }).click();
-  await expect(page.getByRole("button", { name: "development" })).toHaveAttribute("aria-pressed", "true");
+  const development = page.getByRole("button", { name: "development", exact: true });
+  await development.click();
+  await expect(development).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("tab", { name: "Flags" }).click();
   await expect(page.getByText("New Checkout Flow")).toBeVisible();
 
