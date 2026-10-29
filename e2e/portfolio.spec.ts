@@ -43,7 +43,7 @@ test("seeded demo project: toggle shows up on the next fetch and is audited", as
   await page.getByRole("button", { name: "Inspect audit" }).click();
   await expect(page.getByText("Control-plane writes are appended")).toBeVisible();
   await expect(page.getByLabel("Search")).toBeVisible();
-  await expect(page.getByText("flag.killswitch").first()).toBeVisible();
+  await expect(page.locator("span", { hasText: /^flag\.killswitch$/ })).toBeVisible();
 
   await page.getByRole("tab", { name: "Settings" }).click();
   await expect(page.getByRole("heading", { name: "Operator identity" })).toBeVisible();
