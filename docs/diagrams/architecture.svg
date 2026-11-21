@@ -23,39 +23,39 @@
   </defs>
 
   <rect width="1120" height="600" fill="url(#bg)"/>
-  <text x="34" y="40" class="t">Flagship — Feature Flag Control Plane &amp; Zero-RTT Local SDK Architecture</text>
-  <text x="34" y="60" class="s">NestJS + Prisma/Postgres Config &amp; Audit · Redis Compiled Environment Snapshots · Sticky 60-Bit SHA-1 Rollouts</text>
+  <text x="34" y="40" class="t">Flagship &#8212; Feature Flag Control Plane &amp; Zero-RTT Local SDK Architecture</text>
+  <text x="34" y="60" class="s">NestJS + Prisma/Postgres Config &amp; Audit &#183; Redis Compiled Environment Snapshots &#183; Sticky 60-Bit SHA-1 Rollouts</text>
 
   <!-- Plane 1: Control Plane -->
   <rect x="34" y="84" width="1052" height="150" class="zone"/>
   <text x="50" y="106" class="zl">1. Dashboard &amp; Control Plane API (:3000 / :4000)</text>
   <rect x="52" y="122" width="320" height="92" class="box"/>
   <text x="68" y="144" class="bt">Next.js Ops Console (:3000)</text>
-  <text x="68" y="162" class="bs">Kill switches · rule builder · targets</text>
-  <text x="68" y="179" class="bs">JSON diff Audit Log · Live Demo poll</text>
+  <text x="68" y="162" class="bs">Kill switches &#183; rule builder &#183; targets</text>
+  <text x="68" y="179" class="bs">JSON diff Audit Log &#183; Live Demo poll</text>
   <text x="68" y="196" class="bs">Pure-JS SHA-1 browser parity evaluator</text>
 
   <rect x="400" y="122" width="336" height="92" class="box"/>
   <text x="416" y="144" class="bt">NestJS Control &amp; SDK API (:4000)</text>
   <text x="416" y="162" class="bs">FlagsService validates &amp; bumps version</text>
   <text x="416" y="179" class="bs">DatasetService compiles full flag map</text>
-  <text x="416" y="196" class="bs">ADMIN_API_KEY + SDK key guards · /metrics</text>
+  <text x="416" y="196" class="bs">ADMIN_API_KEY + SDK key guards &#183; /metrics</text>
 
   <rect x="764" y="122" width="304" height="92" class="box-db"/>
   <text x="780" y="144" class="bt">PostgreSQL (Prisma) &amp; Redis</text>
-  <text x="780" y="162" class="bs">Postgres: Project · Env · FlagConfig</text>
+  <text x="780" y="162" class="bs">Postgres: Project &#183; Env &#183; FlagConfig</text>
   <text x="780" y="179" class="bs">Append-only AuditLog (before/after)</text>
   <text x="780" y="196" class="bs">Redis: compiled ClientDataset per env</text>
 
   <!-- Plane 2: Local SDK Evaluation -->
   <rect x="34" y="262" width="1052" height="176" class="zone"/>
-  <text x="50" y="284" class="zl">2. Edge / Application SDK (@flagship/sdk — Local Zero-Network Reads)</text>
+  <text x="50" y="284" class="zl">2. Edge / Application SDK (@flagship/sdk &#8212; Local Zero-Network Reads)</text>
   <rect x="52" y="302" width="320" height="114" class="box-warn"/>
   <text x="68" y="324" class="bt">Polling Client (client.ts)</text>
-  <text x="68" y="344" class="bs">• Non-overlapping sequential poll</text>
-  <text x="68" y="362" class="bs">• Holds in-memory ClientDataset copy</text>
-  <text x="68" y="380" class="bs">• Survives API downtime (maxStaleness)</text>
-  <text x="68" y="398" class="bs">• boolVariation() = 0 network RTT</text>
+  <text x="68" y="344" class="bs">&#8226; Non-overlapping sequential poll</text>
+  <text x="68" y="362" class="bs">&#8226; Holds in-memory ClientDataset copy</text>
+  <text x="68" y="380" class="bs">&#8226; Survives API downtime (maxStaleness)</text>
+  <text x="68" y="398" class="bs">&#8226; boolVariation() = 0 network RTT</text>
 
   <rect x="400" y="302" width="336" height="114" class="box-db"/>
   <text x="416" y="324" class="bt">Pure Decision Pipeline (engine.ts)</text>
@@ -71,12 +71,12 @@
   <text x="780" y="380" class="bs">Includes user iff point &lt; pct / 100</text>
   <text x="780" y="398" class="bs">10% -&gt; 20% strictly additive (0 churn)</text>
 
-  <!-- Plane 3: Telemetry & Parity -->
+  <!-- Plane 3: Telemetry &amp; Parity -->
   <rect x="34" y="466" width="1052" height="106" class="zone"/>
   <text x="50" y="488" class="zl">3. Verification, Prometheus Observability &amp; Browser Engine Parity</text>
   <rect x="52" y="502" width="500" height="52" class="box"/>
   <text x="68" y="523" class="bt">Prometheus Metrics (:4000/metrics + Grafana)</text>
-  <text x="68" y="540" class="bs">flagship_kills_total · flagship_dataset_fetches_total · flagship_evaluations_total</text>
+  <text x="68" y="540" class="bs">flagship_kills_total &#183; flagship_dataset_fetches_total &#183; flagship_evaluations_total</text>
 
   <rect x="580" y="502" width="488" height="52" class="box"/>
   <text x="596" y="523" class="bt">Cross-Engine Test Verification</text>

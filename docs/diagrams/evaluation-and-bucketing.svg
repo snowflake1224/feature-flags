@@ -71,7 +71,7 @@
   <rect x="54" y="386" width="460" height="22" class="bar-bg"/>
   <rect x="54" y="386" width="46" height="22" class="bar-10"/>
   <rect x="100" y="386" width="46" height="22" class="bar-20"/>
-  <text x="158" y="401" class="bs">[0.0, 0.10) NEVER churns · [0.10, 0.20) added</text>
+  <text x="158" y="401" class="bs">[0.0, 0.10) NEVER churns &#183; [0.10, 0.20) added</text>
 
   <text x="54" y="438" class="bs">Salt decorrelates flags: user in 1st 10% on Flag A maps differently on Flag B.</text>
 
