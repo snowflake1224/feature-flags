@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 500" role="img" aria-label="Flagship Deterministic Flag Evaluation Order and Sticky Rollout Bucketing">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="100%" stop-color="#131b35"/>
+    </linearGradient>
+    <marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"/>
+    </marker>
+    <style>
+      .t { font: 700 19px 'Inter', 'Segoe UI', system-ui, sans-serif; fill: #f8fafc; }
+      .s { font: 400 12px 'Inter', 'Segoe UI', system-ui, sans-serif; fill: #94a3b8; }
+      .step { fill: #192446; stroke: #3b82f6; stroke-width: 1.4; rx: 9; }
+      .ok { fill: #132e35; stroke: #10b981; stroke-width: 1.5; rx: 9; }
+      .card { fill: #11182d; stroke: #25345c; stroke-width: 1.2; rx: 10; }
+      .bt { font: 600 12.5px 'Inter', 'Segoe UI', system-ui, sans-serif; fill: #f8fafc; }
+      .bs { font: 400 10.8px 'JetBrains Mono', monospace; fill: #94a3b8; }
+      .e { stroke: #38bdf8; stroke-width: 1.6; fill: none; marker-end: url(#a2); }
+      .bar-bg { fill: #1e293b; rx: 6; }
+      .bar-10 { fill: #3b82f6; rx: 6; }
+      .bar-20 { fill: #10b981; rx: 6; }
+    </style>
+  </defs>
+
+  <rect width="1100" height="500" fill="url(#bg2)"/>
+  <text x="34" y="40" class="t">Flag Evaluation Precedence &amp; Monotonic Rollout Geometry</text>
+  <text x="34" y="60" class="s">Identical pure TypeScript decision order in @flagship/sdk, NestJS API test panel, and Next.js browser simulator</text>
+
+  <!-- 5-Step Chain -->
+  <rect x="34" y="96" width="184" height="80" class="step"/>
+  <text x="48" y="122" class="bt">1. Prerequisites</text>
+  <text x="48" y="142" class="bs">Cycle detection set</text>
+  <text x="48" y="159" class="bs">Parent must match var</text>
+
+  <rect x="250" y="96" width="184" height="80" class="step"/>
+  <text x="264" y="122" class="bt">2. Kill Switch</text>
+  <text x="264" y="142" class="bs">!flag.on =&gt; immediate</text>
+  <text x="264" y="159" class="bs">offVariation (OFF)</text>
+
+  <rect x="466" y="96" width="184" height="80" class="step"/>
+  <text x="480" y="122" class="bt">3. Targets</text>
+  <text x="480" y="142" class="bs">Exact context.key</text>
+  <text x="480" y="159" class="bs">list (TARGET_MATCH)</text>
+
+  <rect x="682" y="96" width="184" height="80" class="step"/>
+  <text x="696" y="122" class="bt">4. Rules (AND)</text>
+  <text x="696" y="142" class="bs">First match wins</text>
+  <text x="696" y="159" class="bs">ops: in | endsWith</text>
+
+  <rect x="898" y="96" width="168" height="80" class="ok"/>
+  <text x="912" y="122" class="bt">5. Fallthrough</text>
+  <text x="912" y="142" class="bs">Default variation</text>
+  <text x="912" y="159" class="bs">or SHA-1 % rollout</text>
+
+  <path d="M 218 136 L 250 136" class="e"/>
+  <path d="M 434 136 L 466 136" class="e"/>
+  <path d="M 650 136 L 682 136" class="e"/>
+  <path d="M 866 136 L 898 136" class="e"/>
+
+  <!-- Bottom cards -->
+  <rect x="34" y="218" width="520" height="244" class="card"/>
+  <text x="54" y="248" class="bt">Monotonic Percentage Rollout Stickiness [0.0, 1.0)</text>
+  <text x="54" y="274" class="bs">point = BigInt("0x" + sha1(`${key}.${salt}.${bucketBy}`).slice(0, 15)) / 2^60</text>
+
+  <text x="54" y="314" class="bs">At 10% rollout (threshold = 0.10):</text>
+  <rect x="54" y="324" width="460" height="22" class="bar-bg"/>
+  <rect x="54" y="324" width="46" height="22" class="bar-10"/>
+  <text x="112" y="339" class="bs">[0.0, 0.10) served new variation</text>
+
+  <text x="54" y="376" class="bs">Raised to 20% (same salt -&gt; threshold = 0.20):</text>
+  <rect x="54" y="386" width="460" height="22" class="bar-bg"/>
+  <rect x="54" y="386" width="46" height="22" class="bar-10"/>
+  <rect x="100" y="386" width="46" height="22" class="bar-20"/>
+  <text x="158" y="401" class="bs">[0.0, 0.10) NEVER churns &#183; [0.10, 0.20) added</text>
+
+  <text x="54" y="438" class="bs">Salt decorrelates flags: user in 1st 10% on Flag A maps differently on Flag B.</text>
+
+  <rect x="582" y="218" width="484" height="244" class="card"/>
+  <text x="602" y="248" class="bt">Verification &amp; Consistency Guarantees</text>
+  <text x="602" y="280" class="bs">" Determinism: fixed reference vector pinned across</text>
+  <text x="602" y="298" class="bs">  Node crypto.createHash('sha1') &amp; browser SHA-1</text>
+  <text x="602" y="326" class="bs">" Uniformity: 20,000 keys @ 10% fall inside [8%, 12%]</text>
+  <text x="602" y="344" class="bs">  and 30/70 weighted splits match +/-3% tolerances</text>
+  <text x="602" y="372" class="bs">" Zero Stickiness Breakage: 5,000 keys tested at 10% -&gt; 20%</text>
+  <text x="602" y="390" class="bs">  produce 0 flipped downgrades</text>
+  <text x="602" y="418" class="bs">" Audit Integrity: every mutation records actor, action,</text>
+  <text x="602" y="436" class="bs">  comment, before JSON &amp; after JSON in AuditLog</text>
+</svg>

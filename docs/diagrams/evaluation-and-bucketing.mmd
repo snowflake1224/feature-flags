@@ -1,0 +1,14 @@
+flowchart TD
+    START([evaluate flagKey, context]) --> FOUND{Flag exists in dataset?}
+    FOUND -- no --> ERR1([ERROR: FLAG_NOT_FOUND])
+    FOUND -- yes --> CYC{Cycle guard seen set?}
+    CYC -- yes --> ERR2([ERROR: MALFORMED_FLAG])
+    CYC -- no --> PRE{All prerequisites on & matching?}
+    PRE -- no --> OFF1([offVariation: PREREQUISITE_FAILED])
+    PRE -- yes --> KILL{flag.on == true?}
+    KILL -- no --> OFF2([offVariation: OFF])
+    KILL -- yes --> TGT{Exact target match?}
+    TGT -- yes --> RES1([TARGET_MATCH])
+    TGT -- no --> RULE{First rule where all clauses match?}
+    RULE -- yes --> VR([RULE_MATCH: variation or sticky rollout])
+    RULE -- no --> FT([FALLTHROUGH: variation or sticky rollout])
