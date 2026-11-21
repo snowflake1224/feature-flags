@@ -1,0 +1,23 @@
+flowchart LR
+    subgraph Admin["Control Plane (Next.js Dashboard + NestJS API :4000)"]
+        UI["Dashboard (Toggle · Rules · Targets · Audit · Live Demo)"]
+        API["NestJS API (FlagsService · Projects · AuditService · ADMIN_API_KEY)"]
+        PG[("PostgreSQL + Prisma (Flag · FlagConfig · AuditLog · SdkKey)")]
+        REDIS[("Redis Environment Dataset Cache")]
+        PROM["Prometheus /metrics (kills · fetches · evaluations)"]
+    end
+
+    subgraph Edge["SDK Clients & Local Pure Engine (@flagship/sdk & frontend/lib/local-eval.ts)"]
+        SDK["JS SDK Client (non-overlapping interval poll + in-memory cache)"]
+        ENG["Pure Synchronous Engine (prereq -> kill switch -> target -> rule -> rollout)"]
+        HASH["60-bit SHA-1 Bucketing: sha1(key.salt.bucketBy) / 0xFFFFFFFFFFFFFFF"]
+    end
+
+    UI -->|POST /flags, /toggle + x-actor-email| API
+    API -->|write FlagConfig + AuditLog| PG
+    API -->|DatasetService.refresh| REDIS
+    API --> PROM
+    SDK -->|GET /sdk/dataset (x-api-key: sdkKey)| API
+    API -->|cache hit / rebuild| REDIS
+    SDK --> ENG
+    ENG --> HASH

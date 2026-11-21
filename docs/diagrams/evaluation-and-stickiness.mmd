@@ -1,0 +1,17 @@
+flowchart TD
+    START([evaluate flagKey, context, defaultValue]) --> EXISTS{Flag in ClientDataset?}
+    EXISTS -- no --> ERR1([FLAG_NOT_FOUND -> defaultValue])
+    EXISTS -- yes --> CYCLE{Visited in prerequisite DFS?}
+    CYCLE -- yes --> ERR2([MALFORMED_FLAG -> defaultValue])
+    CYCLE -- no --> PRE{All prerequisites on & matching variation?}
+    PRE -- no --> OFF1([PREREQUISITE_FAILED -> offVariation])
+    PRE -- yes --> ON{flag.on == true?}
+    ON -- false --> OFF2([OFF -> offVariation])
+    ON -- true --> TGT{context.key in any target.values?}
+    TGT -- yes --> OUT1([TARGET_MATCH -> pinned variation])
+    TGT -- no --> RULE{First rule where all clauses match?}
+    RULE -- yes --> RES([RULE_MATCH -> variation or sticky rollout])
+    RULE -- no --> FALL([FALLTHROUGH -> default variation or sticky rollout])
+
+    RES --> BUCKET["bucket = BigInt('0x' + sha1(key.salt.by).slice(0,15)) / 0xFFFFFFFFFFFFFFF"]
+    FALL --> BUCKET

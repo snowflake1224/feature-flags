@@ -89,4 +89,9 @@ Before exposing the API, set `ADMIN_API_KEY` (dashboard routes then require
 `x-api-key`), restrict `CORS_ORIGIN`, and rotate the seeded SDK keys, which are
 committed in the seed script.
 
-More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+## Architecture
+
+![Flagship Architecture](docs/diagrams/architecture.svg)
+![Evaluation Order & Sticky Bucketing](docs/diagrams/evaluation-and-bucketing.svg)
+
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/interview-guide.md](docs/interview-guide.md).

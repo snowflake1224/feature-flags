@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 500" role="img" aria-label="Flagship Evaluation Chain & Monotonic SHA-1 Rollout Stickiness">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1020"/>
+      <stop offset="100%" stop-color="#131b35"/>
+    </linearGradient>
+    <marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"/>
+    </marker>
+    <style>
+      .t { font: 700 19px 'Inter', 'Segoe UI', system-ui, sans-serif; fill: #f8fafc; }
+      .s { font: 400 12px 'Inter', 'Segoe UI', system-ui, sans-serif; fill: #94a3b8; }
+      .step { fill: #192446; stroke: #3b82f6; stroke-width: 1.4; rx: 9; }
+      .kill { fill: #301a29; stroke: #f43f5e; stroke-width: 1.4; rx: 9; }
+      .ok { fill: #132d37; stroke: #10b981; stroke-width: 1.4; rx: 9; }
+      .card { fill: #11182d; stroke: #25345c; stroke-width: 1.2; rx: 10; }
+      .bt { font: 600 12.5px 'Inter', 'Segoe UI', system-ui, sans-serif; fill: #f8fafc; }
+      .bs { font: 400 11px 'JetBrains Mono', monospace; fill: #94a3b8; }
+      .e { stroke: #38bdf8; stroke-width: 1.6; fill: none; marker-end: url(#a2); }
+      .bar-bg { fill: #1e293b; rx: 6; }
+      .bar-10 { fill: #38bdf8; rx: 6; }
+      .bar-20 { fill: #10b981; rx: 6; }
+    </style>
+  </defs>
+
+  <rect width="1100" height="500" fill="url(#bg2)"/>
+  <text x="34" y="38" class="t">Flag Evaluation Precedence &amp; Sticky Bucket Geometry</text>
+  <text x="34" y="58" class="s">Pure synchronous evaluation with cycle detection, explicit reason codes, and zero variation flapping across rollout growth</text>
+
+  <!-- 5-Step Chain -->
+  <rect x="34" y="92" width="186" height="72" class="step"/>
+  <text x="48" y="116" class="bt">1. Prerequisites</text>
+  <text x="48" y="134" class="bs">Cycle-safe DFS check</text>
+  <text x="48" y="149" class="bs">-&gt; PREREQUISITE_FAILED</text>
+
+  <rect x="248" y="92" width="186" height="72" class="kill"/>
+  <text x="262" y="116" class="bt">2. Kill Switch</text>
+  <text x="262" y="134" class="bs">!flag.on short-circuit</text>
+  <text x="262" y="149" class="bs">-&gt; OFF (offVariation)</text>
+
+  <rect x="462" y="92" width="186" height="72" class="step"/>
+  <text x="476" y="116" class="bt">3. Targets</text>
+  <text x="476" y="134" class="bs">Exact context.key match</text>
+  <text x="476" y="149" class="bs">-&gt; TARGET_MATCH</text>
+
+  <rect x="676" y="92" width="186" height="72" class="step"/>
+  <text x="690" y="116" class="bt">4. Audience Rules</text>
+  <text x="690" y="134" class="bs">in | endsWith (AND clauses)</text>
+  <text x="690" y="149" class="bs">-&gt; first match RULE_MATCH</text>
+
+  <rect x="890" y="92" width="176" height="72" class="ok"/>
+  <text x="904" y="116" class="bt">5. Fallthrough</text>
+  <text x="904" y="134" class="bs">Static variation OR</text>
+  <text x="904" y="149" class="bs">60-bit SHA-1 rollout</text>
+
+  <path d="M 220 128 L 248 128" class="e"/>
+  <path d="M 434 128 L 462 128" class="e"/>
+  <path d="M 648 128 L 676 128" class="e"/>
+  <path d="M 862 128 L 890 128" class="e"/>
+
+  <!-- Sticky Rollout Illustration -->
+  <rect x="34" y="204" width="1032" height="260" class="card"/>
+  <text x="54" y="234" class="bt">Why Raising Rollout 10% -&gt; 20% Never Evicts Existing Users</text>
+  <text x="54" y="258" class="bs">point = BigInt("0x" + sha1(`${flagKey}.${salt}.${bucketBy}`).slice(0, 15)) / 0xFFFFFFFFFFFFFFF   in [0, 1)</text>
+
+  <text x="54" y="294" class="bs">At 10% rollout (point &lt; 0.10):</text>
+  <rect x="320" y="280" width="700" height="22" class="bar-bg"/>
+  <rect x="320" y="280" width="70" height="22" class="bar-10"/>
+  <text x="402" y="295" class="bs">[0.00, 0.10) receives Variation 0</text>
+
+  <text x="54" y="338" class="bs">At 20% rollout (point &lt; 0.20):</text>
+  <rect x="320" y="324" width="700" height="22" class="bar-bg"/>
+  <rect x="320" y="324" width="140" height="22" class="bar-20"/>
+  <rect x="320" y="324" width="70" height="22" class="bar-10"/>
+  <text x="472" y="339" class="bs">[0.00, 0.10) stays in · [0.10, 0.20) newly added</text>
+
+  <text x="54" y="388" class="bs">" Per-flag random salt prevents cross-flag correlation (a user in 10% of Flag A is independent in Flag B).</text>
+  <text x="54" y="410" class="bs">" Non-overlapping setTimeout polling ensures slower older HTTP responses never overwrite newer flag snapshots.</text>
+  <text x="54" y="432" class="bs">" Verified by unit suite: 20,000-key uniformity test + 5,000-key monotonic stickiness test + React parity check.</text>
+</svg>
