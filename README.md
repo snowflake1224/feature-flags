@@ -94,4 +94,4 @@ committed in the seed script.
 ![Flagship Architecture](docs/diagrams/architecture.svg)
 ![Evaluation Order & Sticky Bucketing](docs/diagrams/evaluation-and-bucketing.svg)
 
-More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/interview-guide.md](docs/interview-guide.md).
+More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/engineering-faq.md](docs/engineering-faq.md).

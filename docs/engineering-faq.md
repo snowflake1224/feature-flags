@@ -1,4 +1,4 @@
-# Architecture Deep-Dive & Interview Guide
+# Engineering FAQ
 
 This guide prepares engineering walkthroughs on Flagship's deterministic evaluation engine, SDK architecture, Redis snapshot compilation, and trade-offs.
 

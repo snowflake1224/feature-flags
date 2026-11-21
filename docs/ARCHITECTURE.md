@@ -6,7 +6,7 @@ clients evaluate the copy they fetched, and every change leaves an audit row.
 ![Flagship Architecture](diagrams/architecture.svg)
 ![Evaluation & Bucketing Geometry](diagrams/evaluation-and-bucketing.svg)
 
-See also: [Architecture Interview Guide](interview-guide.md)
+See also: [Engineering FAQ](engineering-faq.md)
 
 ```
 Dashboard ──writes──▶ NestJS API ──▶ Postgres (config + audit)
