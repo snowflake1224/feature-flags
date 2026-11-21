@@ -10,7 +10,7 @@ This guide prepares engineering walkthroughs on Flagship's deterministic evaluat
 
 ---
 
-## 2. Core Technical Interview Q&A
+## 2. Core Technical Q&A
 
 ### Q1: Why push compiled flag snapshots to SDK memory instead of calling `/sdk/evaluate` on every flag read?
 - Calling an API on every `boolVariation()` turns a control-plane outage or Redis blip into an application latency/availability outage.
